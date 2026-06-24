@@ -1,132 +1,163 @@
- 🌀 Organizador Espiral de Archivos
+🌀 ORGANIZADOR ESPIRAL + CONTENEDOR DE JUEGOS
+===============================================
+v4.0 · PWA instalable · Abril 2025
 
-**Versión 3.0 – Adaptativa | Menú espiral áureo | Comandos por voz**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📌 ¿QUÉ ES?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Una aplicación web todo-en-uno que permite:
+- Organizar archivos reales en tu disco duro/móvil 
+  (mover, copiar, renombrar, eliminar, cambiar extensión).
+- Ejecutar juegos HTML completos como si tuvieras un 
+  servidor local, incluso offline.
+- Usar comandos de voz para operaciones por lotes.
+- Personalizar el menú contextual (geometría, botones).
 
-## ¿Qué es esto?
+No necesita instalación. Se abre en navegador Chrome/Edge,
+y se puede instalar como PWA para usarla sin conexión.
 
-Una aplicación web que te permite **explorar, mover, copiar, renombrar y eliminar archivos** de tu disco duro (o memoria del móvil) usando una interfaz visual con un **menú espiral** que aparece justo donde haces clic.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🧩 CÓMO SE USA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. ABRE LA APLICACIÓN
+   - En PC: arrastra el archivo .html a Chrome, o 
+     usa un servidor local (python -m http.server 8000).
+   - En móvil (Android): súbela a GitHub Pages y ábrela 
+     en Chrome. Luego "Añadir a pantalla de inicio".
 
-No necesitas instalar nada. Solo un navegador moderno (Chrome, Edge, Opera) y abrir el archivo `organizador.html` con un servidor local o desde GitHub Pages.
+2. ORGANIZA TUS ARCHIVOS
+   - Haz clic en "📁 Abrir carpeta" y selecciona una 
+     carpeta de tu dispositivo.
+   - Explora el árbol (panel derecho) y los archivos 
+     (panel izquierdo).
+   - Clic izquierdo en un archivo → aparece un menú 
+     en abanico con acciones (mover, copiar, etc.).
+   - Clic derecho o pulsación larga (móvil) también 
+     abre el menú.
+   - La geometría del menú (abanico, anillo, espiral, 
+     columna) se cambia desde el panel de configuración ⚙️.
 
-## ¿Qué hace?
+3. EJECUTA JUEGOS HTML
+   - Ve a la pestaña "🎮 Juegos".
+   - Pulsa "Cargar carpeta de juego" y selecciona la 
+     carpeta que contiene tu juego (debe tener index.html).
+   - El juego se guarda en la memoria local.
+   - Pulsa "▶ Ejecutar" y el juego se cargará en un 
+     iframe con todos sus archivos (CSS, JS, imágenes) 
+     resueltos. ¡Sin errores de CORS!
 
-- **Explora carpetas** en un árbol desplegable (estilo explorador de Windows).
-- **Muestra los archivos** como tarjetas con iconos.
-- **Menú espiral áureo** que emerge desde el punto donde haces clic (o mantienes pulsado en móvil).
-- **5 acciones rápidas** configurables: Mover, Copiar, Renombrar, Eliminar, Cambiar extensión.
-- **Chat / consola de comandos** con reconocimiento de voz (escribe o habla órdenes como `mover *.pdf a Documentos`).
-- **Modo oscuro** persistente.
-- **Panel de configuración** donde puedes cambiar el menú, el tamaño de los botones y el modo de interacción, todo editando un JSON en caliente.
-- **Adaptable a cualquier pantalla** (PC, tablet, móvil). La espiral escala y se reposiciona automáticamente para no salirse del viewport.
+   - Ya incluye un juego demo (Motor Pro) para probar.
 
-## Modos de interacción
+4. USA COMANDOS DE VOZ O TEXTO
+   - En el chat inferior escribe (o habla 🎤):
+     • "mover *.pdf a Documentos"
+     • "copiar foto_* a Fotos"
+     • "renombrar .jpeg a .jpg"
+     • "cambiar extension txt a html"
+     • "eliminar *.tmp"
 
-Puedes elegir entre dos modos desde el panel ⚙️:
+5. PERSONALIZA EL MENÚ
+   - Pulsa el botón ⚙️.
+   - Edita el JSON: cambia geometria, buttonSize, 
+     acciones (puedes añadir/quitar botones).
+   - Pulsa "Aplicar" y el menú se actualiza al instante.
 
-| Modo | PC (ratón) | Móvil (dedo) |
-|------|------------|--------------|
-| `menuDirecto` (por defecto) | Un clic izquierdo abre el menú espiral directamente | Pulsación larga (500 ms) abre el menú |
-| `seleccionYMenu` | Un clic **selecciona** el archivo (borde azul). Doble clic abre el menú espiral. | Toque corto selecciona, pulsación larga abre el menú |
+6. MODO OSCURO
+   - El botón 🌙 / ☀️ cambia el tema, y se recuerda 
+     para la próxima visita.
 
-Además, en ambos modos:
-- **Clic derecho** (PC) siempre abre el menú espiral.
-- **Pulsación larga** (móvil) siempre abre el menú espiral.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚙️ CÓMO FUNCIONA INTERNAMENTE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+La aplicación está organizada en módulos separados 
+que se comunican mediante un EventBus central:
 
-## Cómo se usa
+🗂️ FileSystemService
+   - Usa la File System Access API (solo Chrome/Edge)
+     para leer/escribir/mover archivos reales.
+   - Escanea carpetas recursivamente (hasta 3 niveles).
+   - Todas las operaciones (mover, copiar, etc.) piden
+     confirmación y reportan errores.
 
-### Requisitos previos
-- Un navegador compatible con la **File System Access API** (Chrome 86+, Edge 86+, Opera 72+).
-- Para probarlo en PC: **servir el archivo con un servidor local** (no funciona abriendo el `.html` directamente desde `file://`).
-- En móvil (Android): subirlo a **GitHub Pages** o similar, o usar un servidor local como `Termux` + `python`.
+🧠 CommandParser
+   - Interpreta comandos de texto como "mover *.pdf a X".
+   - Convierte patrones (como *.pdf) en expresiones regulares.
+   - Filtra archivos del árbol según esos patrones.
 
-### Primeros pasos (PC)
+🌀 ContextMenuUI (el menú espiral)
+   - Recibe un evento con la posición del icono.
+   - Calcula la geometría seleccionada (abanico, anillo,
+     espiral áurea, columna).
+   - Escala automáticamente según el tamaño de pantalla.
+   - Ajusta la posición si el menú se sale de los bordes.
+   - Anima los botones desde el centro hacia afuera.
 
-1. Guarda el código como `organizador.html`.
-2. Abre una terminal en la carpeta donde lo guardaste.
-3. Ejecuta un servidor local. Con Python 3:
-   ```bash
-   python -m http.server 8000
-Abre http://localhost:8000/organizador.html en Chrome.
+🌳 TreeViewUI (árbol de navegación)
+   - Renderiza el árbol de carpetas/archivos.
+   - Carga diferida: expande carpetas al hacer clic.
+   - Emite eventos al seleccionar un nodo (para mostrar
+     su contenido en el panel izquierdo).
 
-Haz clic en "📁 Abrir carpeta" y selecciona un directorio de tu PC.
+📋 FileListUI (panel de resultados)
+   - Muestra los archivos como tarjetas con iconos.
+   - Según el modo de interacción (configurable), un clic
+     puede abrir el menú o seleccionar el archivo.
 
-Explora el árbol (panel derecho) y los archivos (panel izquierdo).
+🎮 GameLoader
+   - Al cargar una carpeta de juego, lee todos los archivos
+     (incluyendo subcarpetas) y los guarda como Blobs.
+   - Para ejecutar un juego:
+     1. Coge el index.html.
+     2. Reemplaza todas las rutas relativas (src, href, 
+        url() en CSS) por los Blobs correspondientes.
+     3. Carga ese HTML modificado en un iframe.
+   - El juego cree que está en un servidor, porque todos
+     los recursos se cargan desde objetos en memoria 
+     (data URIs/Blobs).
 
-Clic izquierdo sobre un archivo → aparece el menú espiral. Elige una acción.
+⚙️ DrawerUI (panel de configuración)
+   - Carga y guarda la configuración en localStorage.
+   - Al aplicar cambios, emite un evento global para que
+     los demás componentes se actualicen.
 
-Para comandos de voz, haz clic en el 🎤, habla y la orden se ejecutará automáticamente.
+🎤 VoiceInput
+   - Usa la API SpeechRecognition (Chrome) para transcribir
+     voz a texto y enviarlo al chat automáticamente.
 
-Primeros pasos (móvil)
-Sube organizador.html a GitHub Pages (repositorio → Settings → Pages → Source: main, carpeta root).
+💾 PersistenceService
+   - Capa simple sobre localStorage para guardar:
+     • Configuración del menú (geometría, botones).
+     • Juegos guardados (lista de blobs).
+     • Preferencia de tema (oscuro/claro).
+     • Progreso (en el Motor Pro).
 
-Abre la URL en Chrome para Android.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ LIMITACIONES CONOCIDAS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- La File System Access API solo funciona en Chrome,
+  Edge y Opera (no en Firefox ni Safari). La parte de
+  juegos sí funciona en cualquier navegador si los
+  juegos se precargan manualmente.
+- En móvil, File System Access solo está disponible
+  en Android (Chrome). iOS no lo soporta aún.
+- El contenedor de juegos reescribe rutas estáticas
+  en el HTML, pero no intercepta peticiones fetch
+  dinámicas ni XMLHttpRequest (juegos muy complejos
+  podrían requerir un Service Worker adicional).
+- No es un servidor real: no ejecuta PHP, Node.js,
+  ni emula puertos TCP/UDP. Solo sirve archivos
+  estáticos.
+- Los juegos muy grandes (más de 50-100 MB) pueden
+  consumir mucha memoria al guardarse como Blobs.
 
-Toca "📁 Abrir carpeta" y selecciona una carpeta de tu dispositivo.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔮 FUTURAS MEJORAS POSIBLES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Service Worker para precargar juegos y que 
+  funcionen completamente offline.
+- Soporte para archivos ZIP (extraer automáticamente).
+- Proxy de fetch para juegos más complejos.
+- Sincronización con cuentas en la nube (opcional).
+- Internacionalización.
 
-Mantén pulsado un archivo → aparece el menú espiral. Elige la acción.
-
-Puedes usar el chat o el micrófono para comandos rápidos.
-
-Comandos de chat / voz
-Escribe (o habla) frases como:
-
-mover *.pdf a Documentos
-
-copiar foto_* a Fotos
-
-renombrar .jpeg a .jpg
-
-cambiar extension txt a html
-
-eliminar *.tmp
-
-La aplicación te pedirá confirmación antes de ejecutar operaciones masivas.
-
-Personalizar el menú
-Pulsa el botón ⚙️ (esquina superior derecha).
-
-Se abre un panel lateral con un editor JSON.
-
-Puedes cambiar:
-
-modoInteraccion: "menuDirecto" o "seleccionYMenu"
-
-buttonSize: tamaño de los botones del menú (por defecto 48)
-
-actions: lista de acciones, iconos y etiquetas.
-
-Pulsa "Aplicar" y el menú se actualizará al instante.
-
-Estructura del proyecto
-El código está organizado en módulos independientes con un bus de eventos central:
-
-EventBus: comunicación desacoplada entre componentes.
-
-PersistenceService: guarda configuraciones en localStorage.
-
-FileSystemService: toda la interacción con la File System Access API.
-
-CommandParser: interpreta comandos de texto.
-
-SpiralMenuUI: dibuja y anima el menú espiral.
-
-TreeViewUI: panel de navegación en árbol.
-
-FileListUI: panel de resultados (tarjetas de archivos).
-
-VoiceInput: reconocimiento de voz.
-
-DrawerUI: panel de configuración.
-
-App: orquestador principal.
-
-Limitaciones conocidas
-Solo funciona dentro de la carpeta que selecciones (por seguridad del navegador).
-
-En iOS, la File System Access API aún no está soportada.
-
-Las operaciones de mover/renombrar en archivos muy grandes pueden ser lentas (copian el contenido).
-
-La profundidad de escaneo del árbol está limitada a 3 niveles para no saturar.
-
-¿Dudas o sugerencias? ¡A mejorar se ha dicho! 🚀
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
