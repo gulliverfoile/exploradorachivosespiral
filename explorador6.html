@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+  <title>🌀 Organizador Espiral — v3.0 (adaptativo)</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; }
+    :root {
+      --bg: #f4f6f9; --surface: #fff; --border: #e9eef2;
+      --text: #1e293b; --text-secondary: #475569;
+      --primary: #0f172a; --primary-text: #fff;
+      --accent: #3b82f6; --danger: #ef4444;
+      --radius: 16px;
+      --transition: 0.2s;
+      --font: 'Inter', system-ui, sans-serif;
+    }
+    body.dark {
+      --bg: #0f172a; --surface: #1e293b; --border: #334155;
+      --text: #e2e8f0; --text-secondary: #94a3b8;
+      --primary: #e2e8f0; --primary-text: #0f172a;
+    }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh; display: flex; flex-direction: column;
+      transition: background var(--transition), color var(--transition);
+      overflow: hidden;
+    }
+
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; background: var(--surface); border-bottom: 1px solid var(--border);
+      gap: 12px; flex-wrap: wrap;
+    }
+    .topbar .actions { display: flex; gap: 8px; align-items: center; }
+    .btn {
+      border: none; padding: 8px 16px; border-radius: 40px; cursor: pointer;
+      background: var(--primary); color: var(--primary-text); font-weight: 500;
+      white-space: nowrap;
+    }
+    .btn.secondary { background: var(--border); color: var(--text); }
+    .btn.icon { width: 36px; height: 36px; padding: 0; display: grid; place-items: center; border-radius: 50%; font-size: 1.2rem; }
+
+    .main { display: flex; flex: 1; overflow: hidden; }
+    .panel-left {
+      width: 65%; display: flex; flex-direction: column;
+      border-right: 1px solid var(--border); overflow: hidden;
+    }
+    .panel-right {
+      width: 35%; display: flex; flex-direction: column;
+      background: var(--surface); overflow-y: auto;
+    }
+    @media (max-width: 768px) {
+      .panel-right { position: fixed; top: 0; right: 0; height: 100%; width: 80%; transform: translateX(100%); transition: transform 0.3s; z-index: 50; }
+      .panel-right.open { transform: translateX(0); }
+      .panel-left { width: 100%; border-right: none; }
+      .tree-toggle { display: block; }
+    }
+    .tree-toggle { display: none; }
+
+    .chat-bar { display: flex; gap: 8px; padding: 8px 16px; align-items: center; background: var(--surface); border-bottom: 1px solid var(--border); }
+    .chat-bar input { flex: 1; padding: 8px 16px; border-radius: 40px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+    .mic-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: var(--accent); color: white; cursor: pointer; font-size: 1.2rem; }
+    .mic-btn.listening { background: var(--danger); }
+
+    .file-list { flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start; }
+    .file-card {
+      width: 140px; padding: 12px; background: var(--surface); border-radius: var(--radius);
+      border: 2px solid transparent; display: flex; flex-direction: column; align-items: center; gap: 8px;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .file-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .file-card.selected { border-color: var(--accent); background: rgba(59,130,246,0.1); }
+    .file-icon { font-size: 2.5rem; }
+    .file-name { font-size: 0.85rem; word-break: break-all; text-align: center; }
+
+    .tree { padding: 8px; user-select: none; }
+    .tree-item { display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px; cursor: pointer; }
+    .tree-item:hover { background: var(--bg); }
+    .tree-item.selected { background: var(--accent); color: white; }
+    .tree-item .icon { width: 20px; text-align: center; }
+    .tree-item .name { font-size: 0.9rem; word-break: break-all; }
+    .tree-children { margin-left: 16px; }
+
+    /* Drawer */
+    .drawer {
+      position: fixed; top: 0; right: 0; height: 100%; width: 300px;
+      background: var(--surface); border-left: 1px solid var(--border);
+      transform: translateX(100%); transition: transform 0.3s; z-index: 60;
+      padding: 16px; display: flex; flex-direction: column; gap: 12px;
+    }
+    .drawer.open { transform: translateX(0); }
+    .drawer textarea { flex: 1; width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; resize: none; font-family: monospace; }
+    .drawer .btn-row { display: flex; gap: 8px; justify-content: flex-end; }
+
+    /* Spiral menu */
+    .spiral-menu {
+      position: fixed;
+      pointer-events: none;
+      z-index: 1000;
+      width: 0; height: 0;
+    }
+    .spiral-menu.active {
+      pointer-events: auto;
+    }
+    .spiral-btn {
+      position: absolute;
+      border-radius: 50%;
+      border: none;
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      cursor: pointer;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s;
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0);
+      display: grid; place-items: center;
+      font-size: 1.3rem;
+    }
+    .spiral-btn.visible { opacity: 1; }
+
+    .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 45; display: none; }
+    .overlay.show { display: block; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <h2 style="font-size:1.3rem;">🌀 Organizador Espiral</h2>
+    <div class="actions">
+      <button id="btn-open-folder" class="btn">📁 Abrir carpeta</button>
+      <button id="btn-toggle-tree" class="btn icon tree-toggle" title="Árbol">🌳</button>
+      <button id="btn-toggle-theme" class="btn icon">🌙</button>
+      <button id="btn-open-drawer" class="btn icon" title="Configurar menú">⚙️</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="panel-left" id="left-panel">
+      <div class="chat-bar">
+        <input type="text" id="chat-input" placeholder="Ej: mover *.pdf a Documentos" />
+        <button id="mic-btn" class="mic-btn">🎤</button>
+        <button id="send-btn" class="btn">Enviar</button>
+      </div>
+      <div class="file-list" id="file-list">
+        <div style="padding:20px;text-align:center;color:var(--text-secondary);">Selecciona una carpeta en el árbol o usa "Abrir carpeta"</div>
+      </div>
+    </div>
+
+    <div class="panel-right" id="right-panel">
+      <div style="padding:8px;font-weight:600;border-bottom:1px solid var(--border);">📁 Explorador</div>
+      <div class="tree" id="tree-container">
+        <div style="padding:8px;color:var(--text-secondary);">No hay carpeta abierta</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="drawer" id="config-drawer">
+    <h3>⚙️ Configuración</h3>
+    <textarea id="config-json" spellcheck="false"></textarea>
+    <div class="btn-row">
+      <button id="btn-reset-config" class="btn secondary">Restablecer</button>
+      <button id="btn-apply-config" class="btn">Aplicar</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay"></div>
+  <div class="spiral-menu" id="spiral-menu"></div>
+
+  <script type="module">
+    // ============================================
+    // 🧩 EventBus
+    // ============================================
+    class EventBus {
+      #listeners = new Map();
+      on(event, callback) {
+        if (!this.#listeners.has(event)) this.#listeners.set(event, new Set());
+        this.#listeners.get(event).add(callback);
+        return () => this.#listeners.get(event)?.delete(callback);
+      }
+      emit(event, payload) {
+        this.#listeners.get(event)?.forEach(cb => cb(payload));
+      }
+    }
+
+    // ============================================
+    // 🗄️ PersistenceService
+    // ============================================
+    class PersistenceService {
+      static load(key, fallback = null) {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+      }
+      static save(key, value) {
+        localStorage.setItem(key, JSON.stringify(value));
+      }
+    }
+
+    // ============================================
+    // 📁 FileSystemService (sin cambios)
+    // ============================================
+    class FileSystemService {
+      #rootHandle = null;
+      get root() { return this.#rootHandle; }
+      async selectDirectory() {
+        try {
+          this.#rootHandle = await window.showDirectoryPicker();
+          return this.#rootHandle;
+        } catch (e) {
+          if (e.name !== 'AbortError') throw e;
+          return null;
+        }
+      }
+
+      async scanTree(handle = this.#rootHandle, path = '', depth = 0) {
+        if (!handle || depth > 3) return [];
+        const items = [];
+        for await (const [name, h] of handle) {
+          const fullPath = path ? `${path}/${name}` : name;
+          const node = {
+            name, fullPath, kind: h.kind,
+            handle: h,
+            children: h.kind === 'directory' ? await this.scanTree(h, fullPath, depth + 1) : []
+          };
+          items.push(node);
+        }
+        return items.sort((a, b) => {
+          if (a.kind !== b.kind) return a.kind === 'directory' ? -1 : 1;
+          return a.name.localeCompare(b.name);
+        });
+      }
+
+      async move(handle, destFolderName) {
+        const file = await handle.getFile();
+        const destDir = await this.#rootHandle.getDirectoryHandle(destFolderName, { create: true });
+        const newHandle = await destDir.getFileHandle(handle.name, { create: true });
+        const writable = await newHandle.createWritable();
+        await writable.write(file);
+        await writable.close();
+        await handle.remove();
+        return newHandle;
+      }
+
+      async copy(handle, destFolderName) {
+        const file = await handle.getFile();
+        const destDir = await this.#rootHandle.getDirectoryHandle(destFolderName, { create: true });
+        const newHandle = await destDir.getFileHandle(handle.name, { create: true });
+        const writable = await newHandle.createWritable();
+        await writable.write(file);
+        await writable.close();
+        return newHandle;
+      }
+
+      async rename(handle, newName) {
+        const file = await handle.getFile();
+        const parent = await this.#getParentHandle(handle);
+        const newHandle = await parent.getFileHandle(newName, { create: true });
+        const writable = await newHandle.createWritable();
+        await writable.write(file);
+        await writable.close();
+        await handle.remove();
+        return newHandle;
+      }
+
+      async changeExtension(handle, newExt) {
+        const oldName = handle.name;
+        const base = oldName.substring(0, oldName.lastIndexOf('.')) || oldName;
+        return this.rename(handle, `${base}.${newExt}`);
+      }
+
+      async delete(handle) { await handle.remove(); }
+
+      async #getParentHandle(handle) {
+        const findParent = async (dirHandle, targetName) => {
+          for await (const [name, h] of dirHandle) {
+            if (h.kind === 'file' && name === targetName) return dirHandle;
+            if (h.kind === 'directory') {
+              const found = await findParent(h, targetName);
+              if (found) return found;
+            }
+          }
+          return null;
+        };
+        return findParent(this.#rootHandle, handle.name) || this.#rootHandle;
+      }
+    }
+
+    // ============================================
+    // 🧠 CommandParser (sin cambios)
+    // ============================================
+    class CommandParser {
+      static parse(input) {
+        const t = input.trim();
+        const moveCopy = t.match(/^(mover|mov|m|copiar|copy)\s+(.+?)\s+a\s+(.+)$/i);
+        if (moveCopy) {
+          return { action: moveCopy[1].toLowerCase().startsWith('cop') ? 'copy' : 'move', params: { pattern: moveCopy[2], dest: moveCopy[3] } };
+        }
+        const rename = t.match(/^(renombrar|ren)\s+(.+?)\s+a\s+(.+)$/i);
+        if (rename) return { action: 'rename', params: { from: rename[2], to: rename[3] } };
+        const extChange = t.match(/^(cambiar\s+extension|ext)\s+(\w+)\s+a\s+(\w+)/i);
+        if (extChange) return { action: 'changeExt', params: { fromExt: extChange[2], toExt: extChange[3] } };
+        const del = t.match(/^(eliminar|borrar|del)\s+(.+)/i);
+        if (del) return { action: 'delete', params: { pattern: del[2] } };
+        return null;
+      }
+
+      static filterFiles(nodes, pattern) {
+        const result = [];
+        const walk = (list) => {
+          for (const node of list) {
+            if (node.kind === 'file' && CommandParser.matchPattern(node.name, pattern)) result.push(node);
+            if (node.children) walk(node.children);
+          }
+        };
+        walk(nodes);
+        return result;
+      }
+
+      static matchPattern(name, pattern) {
+        const regexStr = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.');
+        return new RegExp(`^${regexStr}$`, 'i').test(name);
+      }
+    }
+
+    // ============================================
+    // 🌀 SpiralMenuUI (adaptativo y armónico)
+    // ============================================
+    class SpiralMenuUI {
+      #container = document.getElementById('spiral-menu');
+      #currentTarget = null;
+      #actions = [];
+      #visible = false;
+      #buttonSize = 48;   // tamaño base en px (se escala después)
+
+      constructor(bus, defaultConfig) {
+        this.bus = bus;
+        this.#loadConfig(defaultConfig);
+        this.bus.on('spiral:show', ({ x, y, node, fsHandle }) => this.show(x, y, node, fsHandle));
+        this.#bindEvents();
+      }
+
+      #loadConfig(config) {
+        this.#actions = config.actions || [
+          { id: 'move', icon: '📁', label: 'Mover' },
+          { id: 'copy', icon: '📋', label: 'Copiar' },
+          { id: 'rename', icon: '✏️', label: 'Renombrar' },
+          { id: 'delete', icon: '🗑️', label: 'Eliminar' },
+          { id: 'ext', icon: '🔧', label: 'Extensión' }
+        ];
+        // Permitir tamaño de botón personalizado desde config
+        this.#buttonSize = config.buttonSize || 48;
+      }
+
+      #bindEvents() {
+        document.addEventListener('click', () => this.hide());
+        this.#container.addEventListener('click', (e) => e.stopPropagation());
+      }
+
+      show(x, y, node, fsHandle) {
+        // Factor de escala basado en el viewport (relativo a 800px)
+        const viewportSize = Math.min(window.innerWidth, window.innerHeight);
+        let scale = viewportSize / 800;
+        // Limitar factor para que no sea demasiado pequeño ni grande
+        scale = Math.max(0.5, Math.min(scale, 1.5));
+
+        const n = this.#actions.length;
+        const btnSize = this.#buttonSize * scale;
+        const goldenAngle = 2.399963; // 137.5°
+        // Radios proporcionales al botón para que queden consecutivos sin solaparse
+        const baseRadius = btnSize * 0.9;
+        const radiusStep = btnSize * 0.35;
+
+        // Calcular el radio máximo de la espiral (centro del último botón + su radio)
+        const maxRadius = baseRadius + (n - 1) * radiusStep + btnSize / 2;
+
+        // Ajustar centro para que la espiral no se salga de la pantalla
+        const adjusted = this.#adjustCenter(x, y, maxRadius);
+
+        this.#currentTarget = { x: adjusted.x, y: adjusted.y, node, fsHandle };
+        this.#container.style.left = `${adjusted.x}px`;
+        this.#container.style.top = `${adjusted.y}px`;
+
+        // Renderizar botones con los valores calculados
+        this.#renderButtons(btnSize, baseRadius, radiusStep, goldenAngle);
+        this.#container.classList.add('active');
+        this.#visible = true;
+        this.#animateButtons(true);
+      }
+
+      #adjustCenter(x, y, radius) {
+        const pad = 10; // margen extra
+        const minX = radius + pad;
+        const maxX = window.innerWidth - radius - pad;
+        const minY = radius + pad;
+        const maxY = window.innerHeight - radius - pad;
+        return {
+          x: Math.min(maxX, Math.max(minX, x)),
+          y: Math.min(maxY, Math.max(minY, y))
+        };
+      }
+
+      #renderButtons(btnSize, baseRadius, radiusStep, goldenAngle) {
+        this.#container.innerHTML = '';
+        const n = this.#actions.length;
+
+        this.#actions.forEach((action, i) => {
+          const btn = document.createElement('button');
+          btn.className = 'spiral-btn';
+          btn.title = action.label;
+          btn.textContent = action.icon;
+          btn.style.width = `${btnSize}px`;
+          btn.style.height = `${btnSize}px`;
+          btn.style.fontSize = `${btnSize * 0.55}px`;
+
+          const angle = i * goldenAngle;
+          const radius = baseRadius + i * radiusStep;
+          const offsetX = Math.cos(angle) * radius;
+          const offsetY = Math.sin(angle) * radius;
+
+          btn.style.setProperty('--x', `${offsetX}px`);
+          btn.style.setProperty('--y', `${offsetY}px`);
+
+          btn.onclick = (e) => {
+            e.stopPropagation();
+            this.bus.emit('spiral:action', { action: action.id, target: this.#currentTarget });
+            this.hide();
+          };
+          this.#container.appendChild(btn);
+        });
+      }
+
+      #animateButtons(visible) {
+        const buttons = this.#container.querySelectorAll('.spiral-btn');
+        buttons.forEach((btn, i) => {
+          setTimeout(() => {
+            if (visible) {
+              btn.style.transform = `translate(var(--x), var(--y)) scale(1)`;
+              btn.classList.add('visible');
+            } else {
+              btn.style.transform = 'translate(-50%, -50%) scale(0)';
+              btn.classList.remove('visible');
+            }
+          }, i * 40);
+        });
+      }
+
+      hide() {
+        if (!this.#visible) return;
+        this.#animateButtons(false);
+        this.#container.classList.remove('active');
+        this.#visible = false;
+        this.#currentTarget = null;
+      }
+
+      updateConfig(config) {
+        this.#loadConfig(config);
+      }
+    }
+
+    // ============================================
+    // 🌳 TreeViewUI (sin cambios significativos)
+    // ============================================
+    class TreeViewUI {
+      #container = document.getElementById('tree-container');
+      #modoInteraccion = 'menuDirecto';
+
+      constructor(bus) {
+        this.bus = bus;
+        this.bus.on('config:updated', (config) => {
+          this.#modoInteraccion = config.modoInteraccion || 'menuDirecto';
+        });
+      }
+
+      render(nodes) {
+        this.#container.innerHTML = '';
+        if (!nodes || nodes.length === 0) {
+          this.#container.innerHTML = '<div style="padding:8px;color:var(--text-secondary);">Vacío</div>';
+          return;
+        }
+        this.#renderNodes(nodes, this.#container, '');
+      }
+
+      #renderNodes(nodes, parentEl, basePath) {
+        for (const node of nodes) {
+          const fullPath = basePath ? `${basePath}/${node.name}` : node.name;
+          const div = document.createElement('div');
+          div.className = 'tree-item';
+          div.innerHTML = `<span class="icon">${node.kind === 'directory' ? '📁' : '📄'}</span><span class="name">${node.name}</span>`;
+
+          div.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (node.kind === 'directory') {
+              const childrenDiv = div.nextElementSibling;
+              if (childrenDiv && childrenDiv.classList.contains('tree-children')) {
+                childrenDiv.hidden = !childrenDiv.hidden;
+              }
+            }
+            document.querySelectorAll('.tree-item.selected').forEach(el => el.classList.remove('selected'));
+            div.classList.add('selected');
+            this.bus.emit('tree:select', { path: fullPath, node });
+
+            if (node.kind === 'file' && this.#modoInteraccion === 'menuDirecto') {
+              const rect = div.getBoundingClientRect();
+              this.bus.emit('spiral:show', { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, node, fsHandle: node.handle });
+            }
+          });
+
+          div.addEventListener('dblclick', (e) => {
+            e.stopPropagation();
+            if (node.kind === 'file' && this.#modoInteraccion === 'seleccionYMenu') {
+              const rect = div.getBoundingClientRect();
+              this.bus.emit('spiral:show', { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, node, fsHandle: node.handle });
+            }
+          });
+
+          div.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            if (node.kind === 'file') {
+              this.bus.emit('spiral:show', { x: e.clientX, y: e.clientY, node, fsHandle: node.handle });
+            }
+          });
+
+          let longPressTimer;
+          div.addEventListener('touchstart', (e) => {
+            longPressTimer = setTimeout(() => {
+              if (node.kind === 'file') {
+                const touch = e.touches[0];
+                this.bus.emit('spiral:show', { x: touch.clientX, y: touch.clientY, node, fsHandle: node.handle });
+              }
+            }, 500);
+          });
+          div.addEventListener('touchend', () => clearTimeout(longPressTimer));
+          div.addEventListener('touchmove', () => clearTimeout(longPressTimer));
+
+          parentEl.appendChild(div);
+
+          if (node.children && node.children.length > 0) {
+            const childrenDiv = document.createElement('div');
+            childrenDiv.className = 'tree-children';
+            childrenDiv.hidden = true;
+            this.#renderNodes(node.children, childrenDiv, fullPath);
+            parentEl.appendChild(childrenDiv);
+          }
+        }
+      }
+    }
+
+    // ============================================
+    // 📋 FileListUI (sin cambios significativos)
+    // ============================================
+    class FileListUI {
+      #container = document.getElementById('file-list');
+      #selectedCard = null;
+      #modoInteraccion = 'menuDirecto';
+
+      constructor(bus) {
+        this.bus = bus;
+        this.bus.on('filelist:show', (children) => this.render(children));
+        this.bus.on('config:updated', (config) => {
+          this.#modoInteraccion = config.modoInteraccion || 'menuDirecto';
+          this.#clearSelection();
+        });
+      }
+
+      #clearSelection() {
+        if (this.#selectedCard) {
+          this.#selectedCard.classList.remove('selected');
+          this.#selectedCard = null;
+        }
+      }
+
+      render(children) {
+        this.#container.innerHTML = '';
+        this.#selectedCard = null;
+        if (!children || children.length === 0) {
+          this.#container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-secondary);">Carpeta vacía</div>';
+          return;
+        }
+        for (const child of children) {
+          const card = document.createElement('div');
+          card.className = 'file-card';
+          card.innerHTML = `<div class="file-icon">${child.kind === 'directory' ? '📁' : '📄'}</div><div class="file-name">${child.name}</div>`;
+
+          card.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (this.#modoInteraccion === 'menuDirecto') {
+              this.bus.emit('spiral:show', { x: e.clientX, y: e.clientY, node: child, fsHandle: child.handle });
+            } else if (this.#modoInteraccion === 'seleccionYMenu') {
+              if (this.#selectedCard === card) {
+                this.#clearSelection();
+              } else {
+                this.#clearSelection();
+                card.classList.add('selected');
+                this.#selectedCard = card;
+              }
+            }
+            if (child.kind === 'directory') {
+              this.bus.emit('tree:select', { path: child.fullPath, node: child });
+            }
+          });
+
+          card.addEventListener('dblclick', (e) => {
+            e.stopPropagation();
+            if (child.kind === 'file' && this.#modoInteraccion === 'seleccionYMenu') {
+              this.bus.emit('spiral:show', { x: e.clientX, y: e.clientY, node: child, fsHandle: child.handle });
+            }
+          });
+
+          card.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            if (child.kind === 'file') {
+              this.bus.emit('spiral:show', { x: e.clientX, y: e.clientY, node: child, fsHandle: child.handle });
+            }
+          });
+
+          let longPressTimer;
+          card.addEventListener('touchstart', (e) => {
+            longPressTimer = setTimeout(() => {
+              if (child.kind === 'file') {
+                const touch = e.touches[0];
+                this.bus.emit('spiral:show', { x: touch.clientX, y: touch.clientY, node: child, fsHandle: child.handle });
+              }
+            }, 500);
+          });
+          card.addEventListener('touchend', () => clearTimeout(longPressTimer));
+          card.addEventListener('touchmove', () => clearTimeout(longPressTimer));
+
+          this.#container.appendChild(card);
+        }
+      }
+    }
+
+    // ============================================
+    // 🎤 VoiceInput (sin cambios)
+    // ============================================
+    class VoiceInput {
+      #btn; #recognition;
+      constructor(bus) {
+        this.bus = bus;
+        this.#btn = document.getElementById('mic-btn');
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) { this.#btn.style.display = 'none'; return; }
+        this.#recognition = new SpeechRecognition();
+        this.#recognition.lang = 'es-ES';
+        this.#recognition.interimResults = false;
+        this.#recognition.continuous = false;
+        this.#btn.addEventListener('click', () => this.toggle());
+        this.#recognition.onresult = (event) => {
+          const transcript = event.results[0][0].transcript;
+          document.getElementById('chat-input').value = transcript;
+          this.bus.emit('voice:result', transcript);
+          this.#btn.classList.remove('listening');
+        };
+        this.#recognition.onerror = () => this.#btn.classList.remove('listening');
+      }
+      toggle() {
+        if (this.#btn.classList.contains('listening')) {
+          this.#recognition.stop();
+          this.#btn.classList.remove('listening');
+        } else {
+          this.#recognition.start();
+          this.#btn.classList.add('listening');
+        }
+      }
+    }
+
+    // ============================================
+    // ⚙️ DrawerUI (con nueva opción buttonSize)
+    // ============================================
+    class DrawerUI {
+      #drawer; #textarea; #overlay;
+      constructor(bus, defaultConfig) {
+        this.bus = bus;
+        this.#drawer = document.getElementById('config-drawer');
+        this.#textarea = document.getElementById('config-json');
+        this.#overlay = document.getElementById('overlay');
+        this.defaultConfig = defaultConfig;
+        document.getElementById('btn-open-drawer').onclick = () => this.open();
+        document.getElementById('btn-apply-config').onclick = () => this.apply();
+        document.getElementById('btn-reset-config').onclick = () => this.reset();
+        this.#overlay.onclick = () => this.close();
+      }
+      open() {
+        this.#textarea.value = JSON.stringify(this.currentConfig, null, 2);
+        this.#drawer.classList.add('open');
+        this.#overlay.classList.add('show');
+      }
+      close() {
+        this.#drawer.classList.remove('open');
+        this.#overlay.classList.remove('show');
+      }
+      apply() {
+        try {
+          const config = JSON.parse(this.#textarea.value);
+          this.currentConfig = config;
+          this.bus.emit('config:updated', config);
+          this.close();
+        } catch (e) { alert('JSON inválido: ' + e.message); }
+      }
+      reset() {
+        this.currentConfig = { ...this.defaultConfig };
+        this.#textarea.value = JSON.stringify(this.currentConfig, null, 2);
+        this.bus.emit('config:updated', this.currentConfig);
+      }
+      set currentConfig(c) { PersistenceService.save('spiralConfig', c); }
+      get currentConfig() { return PersistenceService.load('spiralConfig', this.defaultConfig); }
+    }
+
+    // ============================================
+    // 🚀 App (sin cambios relevantes)
+    // ============================================
+    class App {
+      constructor() {
+        this.bus = new EventBus();
+        this.fs = new FileSystemService();
+
+        const defaultSpiralConfig = {
+          modoInteraccion: 'menuDirecto',
+          buttonSize: 48,
+          actions: [
+            { id: 'move', icon: '📁', label: 'Mover' },
+            { id: 'copy', icon: '📋', label: 'Copiar' },
+            { id: 'rename', icon: '✏️', label: 'Renombrar' },
+            { id: 'delete', icon: '🗑️', label: 'Eliminar' },
+            { id: 'ext', icon: '🔧', label: 'Extensión' }
+          ]
+        };
+
+        this.spiral = new SpiralMenuUI(this.bus, PersistenceService.load('spiralConfig', defaultSpiralConfig));
+        this.tree = new TreeViewUI(this.bus);
+        this.fileList = new FileListUI(this.bus);
+        this.voice = new VoiceInput(this.bus);
+        this.drawer = new DrawerUI(this.bus, defaultSpiralConfig);
+
+        this.treeData = [];
+
+        this.bus.on('spiral:action', ({ action, target }) => this.handleSpiralAction(action, target));
+        this.bus.on('tree:select', ({ node }) => this.handleTreeSelect(node));
+        this.bus.on('config:updated', (config) => this.spiral.updateConfig(config));
+        this.bus.on('voice:result', (text) => this.executeCommand(text));
+
+        document.getElementById('btn-open-folder').onclick = () => this.openFolder();
+        document.getElementById('send-btn').onclick = () => {
+          const input = document.getElementById('chat-input');
+          if (input.value.trim()) this.executeCommand(input.value);
+          input.value = '';
+        };
+        document.getElementById('chat-input').addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') document.getElementById('send-btn').click();
+        });
+        document.getElementById('btn-toggle-theme').onclick = () => {
+          document.body.classList.toggle('dark');
+          const isDark = document.body.classList.contains('dark');
+          document.getElementById('btn-toggle-theme').textContent = isDark ? '☀️' : '🌙';
+          PersistenceService.save('darkMode', isDark);
+        };
+        if (PersistenceService.load('darkMode', false)) {
+          document.body.classList.add('dark');
+          document.getElementById('btn-toggle-theme').textContent = '☀️';
+        }
+        document.getElementById('btn-toggle-tree').onclick = () => {
+          document.getElementById('right-panel').classList.toggle('open');
+        };
+
+        this.bus.emit('config:updated', this.drawer.currentConfig);
+      }
+
+      async openFolder() {
+        const handle = await this.fs.selectDirectory();
+        if (!handle) return;
+        this.treeData = await this.fs.scanTree();
+        this.tree.render(this.treeData);
+        this.fileList.render(this.treeData);
+        document.getElementById('right-panel').querySelector('div:first-child').textContent = `📁 ${handle.name}`;
+      }
+
+      handleTreeSelect(node) {
+        if (node.kind === 'directory') {
+          this.fileList.render(node.children || []);
+        }
+      }
+
+      async handleSpiralAction(actionId, target) {
+        const { node, fsHandle } = target;
+        if (!fsHandle) return;
+        try {
+          switch (actionId) {
+            case 'move': {
+              const dest = prompt('Nombre de la carpeta destino:');
+              if (dest) { await this.fs.move(fsHandle, dest); this.refresh(); alert(`Movido a ${dest}`); }
+              break;
+            }
+            case 'copy': {
+              const dest = prompt('Nombre de la carpeta destino para copia:');
+              if (dest) { await this.fs.copy(fsHandle, dest); this.refresh(); alert(`Copiado a ${dest}`); }
+              break;
+            }
+            case 'rename': {
+              const newName = prompt('Nuevo nombre (con extensión):');
+              if (newName) { await this.fs.rename(fsHandle, newName); this.refresh(); alert('Renombrado'); }
+              break;
+            }
+            case 'delete': {
+              if (confirm(`¿Eliminar ${node.name}?`)) { await this.fs.delete(fsHandle); this.refresh(); alert('Eliminado'); }
+              break;
+            }
+            case 'ext': {
+              const newExt = prompt('Nueva extensión (sin punto):');
+              if (newExt) { await this.fs.changeExtension(fsHandle, newExt); this.refresh(); alert(`Extensión cambiada a .${newExt}`); }
+              break;
+            }
+          }
+        } catch (err) { alert('Error: ' + err.message); }
+      }
+
+      async executeCommand(text) {
+        const cmd = CommandParser.parse(text);
+        if (!cmd) { alert('Comando no reconocido.'); return; }
+        const { action, params } = cmd;
+        const files = CommandParser.filterFiles(this.treeData, params.pattern || params.from || '');
+        if (files.length === 0) { alert('No se encontraron archivos.'); return; }
+        if (!confirm(`Se afectarán ${files.length} archivos. ¿Continuar?`)) return;
+        for (const f of files) {
+          try {
+            switch (action) {
+              case 'move': await this.fs.move(f.handle, params.dest); break;
+              case 'copy': await this.fs.copy(f.handle, params.dest); break;
+              case 'rename': await this.fs.rename(f.handle, f.name.replace(params.from, params.to)); break;
+              case 'changeExt': await this.fs.changeExtension(f.handle, params.toExt); break;
+              case 'delete': await this.fs.delete(f.handle); break;
+            }
+          } catch (e) { console.error(`Error con ${f.name}:`, e); }
+        }
+        await this.refresh();
+        alert('Comando ejecutado.');
+      }
+
+      async refresh() {
+        if (!this.fs.root) return;
+        this.treeData = await this.fs.scanTree();
+        this.tree.render(this.treeData);
+        this.fileList.render([]);
+      }
+    }
+
+    window.app = new App();
+  </script>
+</body>
+</html>
