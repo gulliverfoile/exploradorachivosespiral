@@ -1,129 +1,92 @@
-# 🌀 Organizador Total + Laboratorio de Código
+# 🌀 Asistente Total – Organizador, Laboratorio, Avatar y Transcriptor
 
-**Un explorador de archivos, un lanzador de juegos HTML y un editor de código con análisis en tiempo real… todo en una sola aplicación web.**
+**Una navaja suiza digital autocontenida que integra explorador de archivos, lanzador de juegos HTML, editor de código con análisis básico, avatar facial reactivo con voz y transcriptor de voz con detección de emociones. Todo desde el navegador, sin instalar nada.**
 
 ## ¿Qué es esto?
 
-Una herramienta que reúne tres funciones en una sola interfaz:
+Un archivo HTML (más o menos largo) que reúne varias herramientas que normalmente usarías por separado:
 
-- **📁 Organizador de archivos:** navega por carpetas, mueve, copia, renombra y elimina archivos directamente desde el navegador, con un menú contextual en forma de abanico (o anillo, espiral, columna… configurable).
-- **🎮 Lanzador de juegos (GameLoader):** carga juegos HTML desde tu disco, los empaqueta automáticamente para evitar errores de CORS y los ejecuta en un contenedor virtual. Incluye un juego de demostración.
-- **🔬 Laboratorio de código:** abre cualquier archivo de texto (JS, HTML, CSS…), edítalo con resaltado de sintaxis, analiza el código en busca de malas prácticas (`var`, `console.log`, `==`), aplica correcciones automáticas y renombra variables con un clic.
-
-Todo funciona **offline** (salvo la carga inicial de librerías externas como CodeMirror) y puede instalarse como una aplicación independiente (PWA) en tu escritorio o móvil.
+- **📁 Organizador de archivos:** navega por tus carpetas, mueve, copia, renombra, borra archivos y cambia extensiones. Todo con un menú contextual en forma de abanico (o anillo, espiral, columna… tú eliges).
+- **🎮 GameLoader:** carga juegos HTML desde tu disco, los empaqueta automáticamente para evitar errores de seguridad y los ejecuta en un contenedor virtual. Incluye un juego de demostración.
+- **🔬 Laboratorio de código:** abre cualquier archivo de texto (JS, HTML, CSS…), edítalo con colores, analiza el código en busca de malas prácticas (`var`, `console.log`, `==`) y corrígelas con un clic. También permite renombrar variables de forma segura.
+- **😸 Avatar (caritas):** una cara animada que refleja emociones (alegría, tristeza, sorpresa, enfado) según el texto que escribas. Puede hablar en voz alta con diferentes estilos y velocidades.
+- **🎤 Transcriptor (escuchar):** reconocimiento de voz en tiempo real. Transcribe lo que dices, detecta la emoción en tus palabras y guarda un historial.
+- **📋 Registro de acciones (log):** cada vez que mueves, copias o eliminas un archivo, queda registrado en un historial que puedes consultar y exportar como archivo `.txt`.
 
 ## 🚀 Cómo se usa
 
 ### Requisitos
-- Un navegador moderno basado en Chromium: **Chrome, Edge, Opera**. (Firefox y Safari no soportan la API de acceso a archivos local).
-- Para probarlo en local: **Python 3** (u otro servidor estático).
+- Un navegador basado en Chromium: **Chrome, Edge, Opera** (Firefox y Safari no permiten el acceso completo al sistema de archivos).
+- Para probarlo en local: **Python 3** instalado (o cualquier otro servidor web estático).
 
-### Primeros pasos (PC)
-1. Guarda el archivo como `organizador_total.html`.
+### Pasos rápidos
+1. Guarda el archivo como `asistente_total.html`.
 2. Abre una terminal en la carpeta donde lo guardaste y ejecuta:
    ```bash
    python -m http.server 8000
-En Chrome, visita http://localhost:8000/organizador_total.html.
+En Chrome, visita http://localhost:8000/asistente_total.html.
 
-Usa las pestañas superiores para cambiar entre:
+Verás una barra superior con pestañas. Cada pestaña es una herramienta distinta:
 
-📁 Organizador – Explora y gestiona archivos.
+📁 Organizador: haz clic en "Abrir carpeta", selecciona un directorio y empieza a gestionar archivos. Usa el chat para comandos como mover *.pdf a Documentos o el micrófono para dictar órdenes.
 
-🎮 Juegos – Carga juegos HTML o ejecuta el servidor virtual de demostración.
+🎮 Juegos: pulsa "Iniciar servidor virtual (demo)" para ver un juego de ejemplo, o "Cargar carpeta de juego" para ejecutar tus propios juegos HTML.
 
-🔬 Laboratorio – Edita y analiza código.
+🔬 Lab: haz clic en un archivo desde el organizador para abrirlo en el editor. Analiza, corrige y guarda cambios.
 
-Organizador de archivos
-Haz clic en "📁 Abrir carpeta" y selecciona un directorio de tu ordenador.
+😸 Avatar: escribe un texto y pulsa "Hablar". La cara cambiará según el sentimiento de las palabras (puedes forzar una emoción con los botones inferiores).
 
-Navega por el árbol de carpetas (panel derecho) o por las tarjetas (panel izquierdo).
+🎤 Escuchar: pulsa el micrófono, habla y verás cómo transcribe y detecta tu estado de ánimo.
 
-Clic izquierdo en un archivo → menú contextual en abanico con acciones (Mover, Copiar, Renombrar, Eliminar, Cambiar extensión).
+📋 Log: revisa todas las acciones realizadas sobre archivos y expórtalas si lo necesitas.
 
-Escribe comandos como mover *.pdf a Documentos en la barra de chat o usa el micrófono (solo en Chrome).
+Atajos útiles
+Ctrl+S en el laboratorio guarda el archivo que estás editando.
 
-Juegos (GameLoader)
-Ve a la pestaña 🎮 Juegos.
+El menú contextual del organizador aparece al hacer clic izquierdo sobre un archivo (o clic derecho o pulsación larga en móvil).
 
-Para probar el sistema, pulsa "🚀 Iniciar servidor virtual (demo)". Verás un juego de ejemplo.
+Desde el botón ⚙️ puedes cambiar la geometría del menú, el tamaño de los botones y el modo de interacción.
 
-Para cargar tu propio juego, pulsa "📂 Cargar carpeta de juego", selecciona la carpeta que contiene tu juego (debe tener un index.html). El juego se empaquetará y aparecerá en la lista. Pulsa "▶ Ejecutar" para jugar.
+🧠 Cómo funciona (arquitectura)
+El código está organizado en módulos independientes que se comunican a través de un EventBus (un sistema de eventos). Así, cuando algo ocurre (por ejemplo, mueves un archivo), el módulo de archivos emite un evento y el módulo de log lo recoge sin que uno sepa nada del otro.
 
-Laboratorio de código
-Ve a la pestaña 🔬 Laboratorio.
+Principales piezas
+EventBus: centralita de eventos.
 
-Desde el explorador de archivos (pestaña Organizador), haz clic en un archivo .js, .html, .css, etc. Se abrirá automáticamente en el editor.
+PersistenceService: guarda configuraciones, frases, historiales… en localStorage.
 
-También puedes escribir código directamente.
+FileSystemService: toda la magia de leer, escribir y modificar archivos reales usando la File System Access API (solo en Chromium).
 
-Selecciona el lenguaje (JavaScript o HTML) en el desplegable.
+GeometryEngine: calcula la posición de los botones del menú contextual según la forma elegida (abanico, anillo, espiral, columna).
 
-Usa los botones para:
+ContextMenuUI: dibuja y anima el menú emergente.
 
-🔍 Analizar – Busca var, console.log, == y falta de alt en imágenes.
+TreeViewUI / FileListUI: muestran la estructura de carpetas y los archivos.
 
-🔧 Corregir 'var' – Cambia todos los var por let.
+GameLoaderService: crea un “servidor virtual” con Blob URLs para que los juegos HTML funcionen sin problemas de CORS.
 
-🗑️ Quitar logs – Elimina todas las líneas con console.log.
+CodeEditorUI: carga dinámicamente CodeMirror y proporciona análisis básico de código.
 
-✏️ Renombrar – Coloca el cursor sobre una variable y renómbrala en todo el archivo.
+AvatarService: gestiona el canvas, las emociones y la síntesis de voz (Web Speech API).
 
-💾 Guardar – Guarda los cambios directamente en el archivo original.
+TranscriptorService: maneja el reconocimiento de voz (Web Speech API) y el historial de transcripciones.
 
-❓ Ayuda – Muestra consejos rápidos de buenas prácticas.
+LoggerService: registra y exporta las acciones realizadas sobre archivos.
 
-⚙️ Cómo funciona
-Arquitectura
-El código está organizado en módulos independientes que se comunican a través de un EventBus (arquitectura hexagonal simplificada):
+App: orquesta todos los componentes, las pestañas y las acciones del usuario.
 
-EventBus – Permite que los componentes reaccionen a eventos sin conocerse entre sí.
+¿Por qué necesito un servidor local?
+La API de acceso al sistema de archivos exige un contexto seguro (https:// o http://localhost). Con python -m http.server creamos ese contexto de forma rápida.
 
-PersistenceService – Guarda configuraciones y lista de juegos en localStorage.
+⚠️ Limitaciones
+Solo funciona en navegadores Chromium (Chrome, Edge, Opera…). En Firefox o Safari no se puede usar la parte de gestión de archivos.
 
-FileSystemService – Toda la interacción con la File System Access API (abrir carpetas, leer, escribir, mover, copiar…).
+Los permisos de carpeta no se guardan entre recargas de página; tendrás que volver a seleccionar la carpeta cada vez que entres.
 
-GeometryEngine – Calcula las posiciones de los botones del menú contextual según la geometría elegida (abanico, anillo, espiral, columna).
+Mover o copiar archivos muy grandes (>100 MB) puede ser lento (la API actual obliga a leerlos enteros en memoria).
 
-ContextMenuUI – Dibuja y anima el menú contextual.
+El analizador de código es básico (reglas personalizadas). No sustituye a un linter profesional.
 
-TreeViewUI y FileListUI – Muestran la estructura de carpetas y los archivos.
+El avatar y el transcriptor requieren conexión a internet para cargar las voces (aunque luego funcionan sin ella).
 
-GameLoaderService – Crea un “servidor virtual” en memoria usando Blob URLs para ejecutar juegos sin errores de CORS.
-
-CodeEditorUI – Carga CodeMirror dinámicamente y proporciona análisis de código básico.
-
-VoiceInput – Integra la Web Speech API para reconocimiento de voz.
-
-App – Orquesta todos los componentes, maneja las pestañas y las acciones del usuario.
-
-APIs del navegador utilizadas
-File System Access API (showDirectoryPicker, getFile, createWritable, remove…)
-
-Web Speech API (SpeechRecognition)
-
-Blob URLs (URL.createObjectURL, revokeObjectURL)
-
-CodeMirror (librería externa para el editor)
-
-localStorage para persistencia
-
-¿Por qué hace falta un servidor local?
-La API de acceso al sistema de archivos solo funciona en contextos seguros (https:// o http://localhost). Al usar python -m http.server creamos un servidor local que cumple ese requisito.
-
-⚠️ Limitaciones conocidas
-Solo funciona en navegadores basados en Chromium (Chrome, Edge, Opera).
-
-Los permisos de carpeta no se guardan entre sesiones; tendrás que volver a seleccionar la carpeta al recargar la página.
-
-Mover o copiar archivos muy grandes (>100 MB) puede ser lento porque se leen completamente en memoria.
-
-El analizador de código es básico (reglas personalizadas). No reemplaza a un linter profesional como ESLint.
-
-El GameLoader no soporta juegos con módulos ES6 (import/export) a menos que los empaquetes antes con una herramienta como esbuild.
-
-🧑‍💻 Créditos y filosofía
-Este proyecto nació como un experimento en pocas horas, con el objetivo de aprender, divertirse y demostrar que se pueden crear herramientas potentes con tecnologías web estándar, sin dependencias pesadas.
-
-La arquitectura es modular, el código está comentado y cada pieza puede reemplazarse o ampliarse fácilmente. Si quieres añadir otra pestaña, otro tipo de análisis o una nueva geometría de menú, solo tienes que crear un nuevo componente y conectarlo al EventBus.
-
-¿Dudas, ideas, mejoras? ¡A trastear se ha dicho! 🚀🌀
+Hecho con curiosidad, café y la firme convicción de que las herramientas deben ser libres, transparentes y divertidas.
