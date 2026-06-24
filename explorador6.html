@@ -3,11 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-  <title>🌀 Organizador + GameLoader (hexagonal)</title>
-  <!-- Manifest PWA inline (seguro) -->
-  <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Organizador%20%2B%20Juegos%22%2C%22short_name%22%3A%22OrgGames%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f4f6f9%22%2C%22theme_color%22%3A%22%233b82f6%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%253D'http%253A%2F%2Fwww.w3.org%2F2000%2Fsvg'%2520viewBox%253D'0%25200%2520100%2520100'%253E%253Ccircle%2520cx%253D'50'%2520cy%253D'50'%2520r%253D'45'%2520fill%253D'%25233b82f6'%2F%253E%253Ctext%2520x%253D'50'%2520y%253D'60'%2520text-anchor%253D'middle'%2520fill%253D'white'%2520font-size%253D'40'%253E🌀%253C%2Ftext%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22100x100%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
+  <title>🌀 Organizador Total + Laboratorio</title>
+  <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Organizador%20Total%22%2C%22short_name%22%3A%22OrgTotal%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f4f6f9%22%2C%22theme_color%22%3A%22%233b82f6%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%253D'http%253A%2F%2Fwww.w3.org%2F2000%2Fsvg'%2520viewBox%253D'0%25200%2520100%2520100'%253E%253Ccircle%2520cx%253D'50'%2520cy%253D'50'%2520r%253D'45'%2520fill%253D'%25233b82f6'%2F%253E%253Ctext%2520x%253D'50'%2520y%253D'60'%2520text-anchor%253D'middle'%2520fill%253D'white'%2520font-size%253D'40'%253E🌀%253C%2Ftext%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22100x100%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
   <style>
-    /* ===== RESET & VARIABLES ===== */
+    /* ===== RESET & VARIABLES (sin cambios) ===== */
     *, *::before, *::after { box-sizing: border-box; margin: 0; }
     :root {
       --bg: #f4f6f9; --surface: #fff; --border: #e9eef2;
@@ -103,11 +102,29 @@
     .game-list { flex: 1; overflow-y: auto; padding: 8px; }
     .game-card { background: var(--surface); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; border: 1px solid var(--border); }
     .game-frame { width: 100%; height: 70vh; border: 1px solid var(--border); border-radius: var(--radius); }
+
+    /* ===== LABORATORIO ===== */
+    .lab-container {
+      display: flex; flex-direction: column; height: 100%; padding: 8px; gap: 8px;
+    }
+    .lab-toolbar { display: flex; flex-wrap: wrap; gap: 6px; }
+    .lab-editor { flex: 1; min-height: 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .lab-problems { max-height: 150px; overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px; }
+    .lab-problems .problem-item {
+      padding: 4px 8px; margin-bottom: 4px; border-left: 4px solid; border-radius: 4px; cursor: pointer; background: var(--bg); font-size: 0.85rem;
+    }
+    .lab-problems .problem-item:hover { background: var(--border); }
+    .lab-help-panel {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      background: var(--surface); border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      padding: 20px; z-index: 100; display: none; max-width: 500px; max-height: 80vh; overflow-y: auto;
+    }
+    .CodeMirror { height: 100% !important; border-radius: var(--radius); }
   </style>
 </head>
 <body>
   <div class="topbar">
-    <h2 style="font-size:1.3rem;">🌀 Organizador + Juegos <span id="geometry-badge" class="geometry-badge">abanico</span></h2>
+    <h2 style="font-size:1.3rem;">🌀 Organizador Total <span id="geometry-badge" class="geometry-badge">abanico</span></h2>
     <div class="actions">
       <button id="btn-open-folder" class="btn">📁 Abrir carpeta</button>
       <button id="btn-toggle-tree" class="btn icon tree-toggle" title="Árbol">🌳</button>
@@ -119,9 +136,11 @@
   <div class="tabs">
     <div id="tab-organizador" class="tab active">📁 Organizador</div>
     <div id="tab-juegos" class="tab">🎮 Juegos</div>
+    <div id="tab-laboratorio" class="tab">🔬 Laboratorio</div>
   </div>
 
   <div class="main">
+    <!-- PANEL ORGANIZADOR -->
     <div id="panel-organizador" style="display:flex; flex:1;">
       <div class="panel-left" id="left-panel">
         <div class="chat-bar">
@@ -141,10 +160,30 @@
       </div>
     </div>
 
+    <!-- PANEL JUEGOS -->
     <div id="panel-juegos" style="display:none; flex:1; padding:16px; overflow-y:auto;">
       <button id="btn-load-game" class="btn">📂 Cargar carpeta de juego</button>
       <button id="btn-start-server" class="btn secondary" style="margin-left:8px;">🚀 Iniciar servidor virtual (demo)</button>
       <div id="game-list" class="game-list"></div>
+    </div>
+
+    <!-- PANEL LABORATORIO -->
+    <div id="panel-laboratorio" style="display:none; flex:1; flex-direction:column;">
+      <div class="lab-container">
+        <div class="lab-toolbar">
+          <select id="lab-language"><option value="javascript">JavaScript</option><option value="html">HTML</option></select>
+          <button id="lab-analyze" class="btn">🔍 Analizar</button>
+          <button id="lab-fix-var" class="btn secondary">🔧 Corregir 'var'</button>
+          <button id="lab-remove-logs" class="btn secondary">🗑️ Quitar logs</button>
+          <button id="lab-rename" class="btn secondary">✏️ Renombrar</button>
+          <button id="lab-save" class="btn">💾 Guardar</button>
+          <button id="lab-help" class="btn icon">❓</button>
+        </div>
+        <div class="lab-editor" id="lab-editor"></div>
+        <div class="lab-problems" id="lab-problems">
+          <div style="color:var(--text-secondary); text-align:center;">Los problemas aparecerán aquí tras analizar.</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -159,11 +198,20 @@
 
   <div class="overlay" id="overlay"></div>
   <div class="context-menu" id="context-menu"></div>
+  <div class="lab-help-panel" id="lab-help-panel">
+    <button id="lab-help-close" class="btn" style="float:right;">✕</button>
+    <h3>📖 Ayuda rápida</h3>
+    <div id="lab-help-content"></div>
+  </div>
 
   <script type="module">
     // ============================================
-    // 🧩 EventBus
+    // 🧩 EventBus, PersistenceService, FileSystemService, CommandParser, GeometryEngine,
+    // ContextMenuUI, TreeViewUI, FileListUI, VoiceInput, DrawerUI, GameLoaderService,
+    // CodeEditorUI, App
     // ============================================
+
+    // EventBus
     class EventBus {
       #listeners = new Map();
       on(event, callback) {
@@ -176,22 +224,16 @@
       }
     }
 
-    // ============================================
-    // 🗄️ PersistenceService
-    // ============================================
+    // PersistenceService
     class PersistenceService {
       static load(key, fallback = null) {
         try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; }
         catch (e) { return fallback; }
       }
-      static save(key, value) {
-        try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
-      }
+      static save(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {} }
     }
 
-    // ============================================
-    // 📁 FileSystemService (API nativa)
-    // ============================================
+    // FileSystemService
     class FileSystemService {
       #root = null;
       get root() { return this.#root; }
@@ -207,10 +249,7 @@
           const node = { name, fullPath, kind: h.kind, handle: h, children: h.kind === 'directory' ? await this.scanTree(h, fullPath, depth + 1) : [] };
           items.push(node);
         }
-        return items.sort((a, b) => {
-          if (a.kind !== b.kind) return a.kind === 'directory' ? -1 : 1;
-          return a.name.localeCompare(b.name);
-        });
+        return items.sort((a, b) => { if (a.kind !== b.kind) return a.kind === 'directory' ? -1 : 1; return a.name.localeCompare(b.name); });
       }
       async move(handle, destFolderName) {
         const file = await handle.getFile();
@@ -250,9 +289,7 @@
       }
     }
 
-    // ============================================
-    // 🧠 CommandParser
-    // ============================================
+    // CommandParser
     class CommandParser {
       static parse(input) {
         const t = input.trim();
@@ -277,9 +314,7 @@
       }
     }
 
-    // ============================================
-    // 📐 GeometryEngine
-    // ============================================
+    // GeometryEngine
     class GeometryEngine {
       static calculate(type, count, btnSize, center) {
         switch (type) {
@@ -322,9 +357,7 @@
       }
     }
 
-    // ============================================
-    // 🌀 ContextMenuUI
-    // ============================================
+    // ContextMenuUI
     class ContextMenuUI {
       #container = document.getElementById('context-menu');
       #bus; #actions = []; #visible = false; #buttonSize = 48; #geometry = 'abanico'; #target = null;
@@ -389,9 +422,7 @@
       updateConfig(c) { this.#loadConfig(c); }
     }
 
-    // ============================================
-    // 🌳 TreeViewUI
-    // ============================================
+    // TreeViewUI (con emisión 'file:open')
     class TreeViewUI {
       #container = document.getElementById('tree-container');
       #bus; #modo = 'menuDirecto';
@@ -449,9 +480,7 @@
       }
     }
 
-    // ============================================
-    // 📋 FileListUI
-    // ============================================
+    // FileListUI (similar)
     class FileListUI {
       #container = document.getElementById('file-list');
       #bus; #modo = 'menuDirecto'; #selected = null;
@@ -500,9 +529,7 @@
       }
     }
 
-    // ============================================
-    // 🎤 VoiceInput
-    // ============================================
+    // VoiceInput
     class VoiceInput {
       #btn; #rec; #bus;
       constructor(bus) {
@@ -524,9 +551,7 @@
       }
     }
 
-    // ============================================
-    // ⚙️ DrawerUI
-    // ============================================
+    // DrawerUI
     class DrawerUI {
       #drawer; #textarea; #overlay; #bus; #defaultConfig;
       constructor(bus, defaultConfig) {
@@ -554,9 +579,7 @@
       set currentConfig(c) { PersistenceService.save('menuConfig', c); }
     }
 
-    // ============================================
-    // 🎮 GameLoaderService
-    // ============================================
+    // GameLoaderService (CORREGIDO: demo autónomo sin archivos externos)
     class GameLoaderService {
       #games = [];
       #container = document.getElementById('game-list');
@@ -598,18 +621,39 @@
         return items;
       }
       startVirtualServer() {
-        // Crear juego demo (Motor Pro simple) - escapar cierre de script
-        const indexHTML = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Motor Pro Demo</title><link rel="stylesheet" href="style.css"></head><body><div id="app">Cargando...</div><script src="app.js"><\/script></body></html>';
-        const demoFiles = [
-          { name: 'index.html', path: 'index.html', blob: URL.createObjectURL(new Blob([indexHTML], {type: 'text/html'})) },
-          { name: 'style.css', path: 'style.css', blob: URL.createObjectURL(new Blob([`body { background:#0f172a; color:white; font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; } #app { font-size:2rem; }`], {type: 'text/css'})) },
-          { name: 'app.js', path: 'app.js', blob: URL.createObjectURL(new Blob([`document.getElementById('app').innerText = '✅ Servidor virtual funcionando';`], {type: 'application/javascript'})) }
-        ];
+        // Demo autónomo: CSS y JS en línea, sin archivos externos
+        const indexHTML = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Motor Pro Demo</title>
+  <style>
+    body {
+      background: #0f172a;
+      color: white;
+      font-family: sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    #app { font-size: 2rem; }
+  </style>
+</head>
+<body>
+  <div id="app">Cargando...</div>
+  <script>
+    document.getElementById('app').innerText = '✅ Servidor virtual funcionando';
+  <\/script>
+</body>
+</html>`;
+        // Solo necesitamos el indexBlob, ya que no hay archivos separados
         const demoGame = {
           id: 'demo',
           name: '🎮 Demo Motor Pro (servidor virtual)',
-          files: demoFiles,
-          indexBlob: demoFiles[0].blob
+          files: [{ name: 'index.html', path: 'index.html', blob: URL.createObjectURL(new Blob([indexHTML], {type: 'text/html'})) }],
+          indexBlob: URL.createObjectURL(new Blob([indexHTML], {type: 'text/html'}))
         };
         if (!this.#games.find(g => g.id === 'demo')) {
           this.#games.push(demoGame);
@@ -670,11 +714,204 @@
       }
     }
 
-    // ============================================
-    // 🚀 App
-    // ============================================
+    // CodeEditorUI
+    class CodeEditorUI {
+      #editor = null;
+      #currentFileHandle = null;
+      #currentLanguage = 'javascript';
+      #problems = [];
+      #bus;
+
+      constructor(bus) {
+        this.#bus = bus;
+        this.#loadDependencies().then(() => {
+          this.#initEditor();
+          this.#bindEvents();
+        });
+      }
+
+      async #loadDependencies() {
+        if (!window.CodeMirror) {
+          await this.#loadScript('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js');
+          await Promise.all([
+            this.#loadScript('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js'),
+            this.#loadScript('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/htmlmixed/htmlmixed.min.js'),
+            this.#loadScript('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js'),
+            this.#loadScript('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/css/css.min.js'),
+            this.#loadScript('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldcode.min.js'),
+            this.#loadScript('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldgutter.min.js'),
+            this.#loadScript('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/brace-fold.min.js'),
+            this.#loadScript('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/comment-fold.min.js'),
+          ]);
+        }
+        if (!window.jsyaml) await this.#loadScript('https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js');
+        if (!window.acorn) await this.#loadScript('https://unpkg.com/acorn@8.8.0/dist/acorn.js');
+        if (!window.esquery) await this.#loadScript('https://unpkg.com/esquery@1.4.0/dist/esquery.min.js');
+      }
+
+      #loadScript(src) {
+        return new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = src;
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+
+      #initEditor() {
+        this.#editor = CodeMirror(document.getElementById('lab-editor'), {
+          lineNumbers: true, mode: 'javascript', theme: 'dracula',
+          autoCloseBrackets: true, indentUnit: 2, tabSize: 2,
+          foldGutter: true, gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+          foldOptions: { rangeFinder: new CodeMirror.fold.combine(CodeMirror.fold.brace, CodeMirror.fold.comment) }
+        });
+        this.#editor.setValue('// Abre un archivo desde el explorador o escribe código aquí.');
+      }
+
+      #bindEvents() {
+        document.getElementById('lab-language').addEventListener('change', (e) => {
+          this.#currentLanguage = e.target.value;
+          this.#editor.setOption('mode', this.#currentLanguage === 'html' ? 'htmlmixed' : 'javascript');
+        });
+        document.getElementById('lab-analyze').addEventListener('click', () => this.analyze());
+        document.getElementById('lab-fix-var').addEventListener('click', () => this.fixVar());
+        document.getElementById('lab-remove-logs').addEventListener('click', () => this.removeLogs());
+        document.getElementById('lab-rename').addEventListener('click', () => this.renameSymbol());
+        document.getElementById('lab-save').addEventListener('click', () => this.saveFile());
+        document.getElementById('lab-help').addEventListener('click', () => this.showHelp());
+        document.getElementById('lab-help-close').addEventListener('click', () => {
+          document.getElementById('lab-help-panel').style.display = 'none';
+        });
+
+        this.#bus.on('file:open', ({ handle, name, content }) => {
+          this.#currentFileHandle = handle;
+          this.#editor.setValue(content);
+          if (name.endsWith('.html') || name.endsWith('.htm')) {
+            document.getElementById('lab-language').value = 'html';
+            this.#editor.setOption('mode', 'htmlmixed');
+          } else {
+            document.getElementById('lab-language').value = 'javascript';
+            this.#editor.setOption('mode', 'javascript');
+          }
+          this.#currentLanguage = document.getElementById('lab-language').value;
+        });
+
+        document.addEventListener('keydown', (e) => {
+          if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            this.saveFile();
+          }
+        });
+      }
+
+      analyze() {
+        const code = this.#editor.getValue();
+        this.#problems = [];
+        if (this.#currentLanguage === 'javascript') {
+          try {
+            acorn.parse(code, { ecmaVersion: 2020, locations: true });
+            const lines = code.split('\n');
+            lines.forEach((line, idx) => {
+              if (/\bvar\b/.test(line)) this.#problems.push({ message: 'Uso de var (recomendado let/const)', line: idx+1, severity: 'media', rule: 'no-var' });
+              if (/console\.log/.test(line)) this.#problems.push({ message: 'console.log encontrado', line: idx+1, severity: 'baja', rule: 'console-log' });
+              if (/[^=!]==[^=]/.test(line)) this.#problems.push({ message: 'Usar === en lugar de ==', line: idx+1, severity: 'alta', rule: 'eqeqeq' });
+            });
+          } catch (e) {
+            this.#problems.push({ message: 'Error de sintaxis: ' + e.message, line: e.loc?.line || 1, severity: 'alta' });
+          }
+        } else if (this.#currentLanguage === 'html') {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(code, 'text/html');
+          const errors = doc.querySelector('parsererror');
+          if (errors) {
+            this.#problems.push({ message: 'Error de sintaxis HTML', line: 0, severity: 'alta' });
+          } else {
+            doc.querySelectorAll('img').forEach(img => {
+              if (!img.hasAttribute('alt')) this.#problems.push({ message: 'Imagen sin atributo alt', line: 0, severity: 'media' });
+            });
+          }
+        }
+        this.#renderProblems();
+      }
+
+      #renderProblems() {
+        const container = document.getElementById('lab-problems');
+        if (this.#problems.length === 0) {
+          container.innerHTML = '<div style="color:green;">✅ Sin problemas</div>'; return;
+        }
+        container.innerHTML = this.#problems.map(p => `
+          <div class="problem-item" style="border-left-color: ${p.severity==='alta'?'red':'orange'}" data-line="${p.line}">
+            [Línea ${p.line}] ${p.message}
+          </div>
+        `).join('');
+        document.querySelectorAll('#lab-problems .problem-item').forEach(el => {
+          el.addEventListener('click', () => {
+            const line = parseInt(el.dataset.line);
+            if (line) this.#editor.setCursor({ line: line-1, ch: 0 });
+          });
+        });
+      }
+
+      fixVar() {
+        let code = this.#editor.getValue();
+        const lines = code.split('\n');
+        let count = 0;
+        const newLines = lines.map(line => {
+          if (/\bvar\b/.test(line) && !/\blet\b/.test(line) && !/\bconst\b/.test(line)) {
+            count++;
+            return line.replace(/\bvar\b/g, 'let');
+          }
+          return line;
+        });
+        if (count > 0) { this.#editor.setValue(newLines.join('\n')); alert(`${count} 'var' cambiados a 'let'.`); }
+        else alert('No se encontraron "var".');
+      }
+
+      removeLogs() {
+        let code = this.#editor.getValue();
+        const lines = code.split('\n');
+        const newLines = lines.filter(line => !/console\.log/.test(line));
+        if (newLines.length < lines.length) { this.#editor.setValue(newLines.join('\n')); alert(`${lines.length - newLines.length} console.log eliminados.`); }
+        else alert('No hay console.log.');
+      }
+
+      renameSymbol() {
+        const cursor = this.#editor.getCursor();
+        const token = this.#editor.getTokenAt(cursor);
+        if (!token || token.type !== 'variable') { alert('Coloca el cursor sobre una variable.'); return; }
+        const oldName = token.string;
+        const newName = prompt(`Renombrar "${oldName}" a:`, oldName);
+        if (!newName || newName === oldName) return;
+        const code = this.#editor.getValue();
+        const regex = new RegExp(`\\b${oldName}\\b`, 'g');
+        this.#editor.setValue(code.replace(regex, newName));
+      }
+
+      async saveFile() {
+        if (!this.#currentFileHandle) { alert('No hay archivo abierto. Abre uno desde el explorador.'); return; }
+        try {
+          const writable = await this.#currentFileHandle.createWritable();
+          await writable.write(this.#editor.getValue());
+          await writable.close();
+          alert('Archivo guardado correctamente.');
+        } catch (e) { alert('Error al guardar: ' + e.message); }
+      }
+
+      showHelp() {
+        document.getElementById('lab-help-content').innerHTML = `
+          <p><strong>Variables:</strong> Usa <code>let</code> y <code>const</code> en lugar de <code>var</code>.</p>
+          <p><strong>Comparaciones:</strong> Prefiere <code>===</code> sobre <code>==</code>.</p>
+          <p><strong>Consola:</strong> Elimina <code>console.log</code> en producción.</p>
+          <p><strong>Renombrar:</strong> Coloca el cursor sobre una variable y pulsa el botón Renombrar.</p>
+        `;
+        document.getElementById('lab-help-panel').style.display = 'block';
+      }
+    }
+
+    // 🚀 App (COMPLETA, con todos los métodos)
     class App {
-      #bus; #fs; #treeData = [];
+      #bus; #fs; #treeData = []; #lab;
       constructor() {
         this.#bus = new EventBus();
         this.#fs = new FileSystemService();
@@ -692,9 +929,13 @@
         this.voice = new VoiceInput(this.#bus);
         this.drawer = new DrawerUI(this.#bus, defaultConfig);
         this.gameLoader = new GameLoaderService();
+        this.#lab = null;
 
         this.#bus.on('context:action', ({ action, target }) => this.#handleAction(action, target));
-        this.#bus.on('tree:select', ({ node }) => { if (node.kind === 'directory') this.fileList.render(node.children || []); });
+        this.#bus.on('tree:select', ({ node }) => {
+          if (node.kind === 'directory') this.fileList.render(node.children || []);
+          else if (node.kind === 'file') this.#readAndOpenFile(node.handle, node.name);
+        });
         this.#bus.on('config:updated', c => this.menu.updateConfig(c));
         this.#bus.on('voice:result', t => this.#executeCommand(t));
 
@@ -707,27 +948,39 @@
           document.getElementById('btn-toggle-theme').textContent = d ? '☀️' : '🌙';
           PersistenceService.save('darkMode', d);
         };
-        if (PersistenceService.load('darkMode', false)) {
-          document.body.classList.add('dark'); document.getElementById('btn-toggle-theme').textContent = '☀️';
-        }
+        if (PersistenceService.load('darkMode', false)) { document.body.classList.add('dark'); document.getElementById('btn-toggle-theme').textContent = '☀️'; }
         document.getElementById('btn-toggle-tree').onclick = () => document.getElementById('right-panel').classList.toggle('open');
         document.getElementById('tab-organizador').onclick = () => this.#switchTab('organizador');
         document.getElementById('tab-juegos').onclick = () => this.#switchTab('juegos');
+        document.getElementById('tab-laboratorio').onclick = () => this.#switchTab('laboratorio');
         this.#bus.emit('config:updated', this.drawer.currentConfig);
       }
+
+      async #readAndOpenFile(handle, name) {
+        try {
+          const file = await handle.getFile();
+          const content = await file.text();
+          this.#bus.emit('file:open', { handle, name, content });
+        } catch (e) { console.error('Error al leer archivo:', e); }
+      }
+
       #switchTab(tab) {
         const org = document.getElementById('panel-organizador');
         const games = document.getElementById('panel-juegos');
+        const lab = document.getElementById('panel-laboratorio');
         const tOrg = document.getElementById('tab-organizador');
         const tGames = document.getElementById('tab-juegos');
-        if (tab === 'organizador') {
-          org.style.display = 'flex'; games.style.display = 'none';
-          tOrg.classList.add('active'); tGames.classList.remove('active');
-        } else {
-          org.style.display = 'none'; games.style.display = 'block';
-          tOrg.classList.remove('active'); tGames.classList.add('active');
+        const tLab = document.getElementById('tab-laboratorio');
+        org.style.display = games.style.display = lab.style.display = 'none';
+        tOrg.classList.remove('active'); tGames.classList.remove('active'); tLab.classList.remove('active');
+        if (tab === 'organizador') { org.style.display = 'flex'; tOrg.classList.add('active'); }
+        else if (tab === 'juegos') { games.style.display = 'block'; tGames.classList.add('active'); }
+        else if (tab === 'laboratorio') {
+          lab.style.display = 'flex'; tLab.classList.add('active');
+          if (!this.#lab) this.#lab = new CodeEditorUI(this.#bus);
         }
       }
+
       async #openFolder() {
         const h = await this.#fs.selectDirectory();
         if (!h) return;
@@ -736,6 +989,7 @@
         this.fileList.render(this.#treeData);
         document.getElementById('right-panel').querySelector('div:first-child').textContent = `📁 ${h.name}`;
       }
+
       async #handleAction(id, target) {
         const { node, fsHandle } = target; if (!fsHandle) return;
         try {
@@ -748,6 +1002,7 @@
           }
         } catch (e) { alert('Error: ' + e.message); }
       }
+
       async #executeCommand(text) {
         const cmd = CommandParser.parse(text);
         if (!cmd) { alert('Comando no reconocido.'); return; }
@@ -769,6 +1024,7 @@
         await this.#refresh();
         alert('Comando ejecutado.');
       }
+
       async #refresh() {
         if (!this.#fs.root) return;
         this.#treeData = await this.#fs.scanTree();
