@@ -1,163 +1,129 @@
-🌀 ORGANIZADOR ESPIRAL + CONTENEDOR DE JUEGOS
-===============================================
-v4.0 · PWA instalable · Abril 2025
+# 🌀 Organizador Total + Laboratorio de Código
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📌 ¿QUÉ ES?
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Una aplicación web todo-en-uno que permite:
-- Organizar archivos reales en tu disco duro/móvil 
-  (mover, copiar, renombrar, eliminar, cambiar extensión).
-- Ejecutar juegos HTML completos como si tuvieras un 
-  servidor local, incluso offline.
-- Usar comandos de voz para operaciones por lotes.
-- Personalizar el menú contextual (geometría, botones).
+**Un explorador de archivos, un lanzador de juegos HTML y un editor de código con análisis en tiempo real… todo en una sola aplicación web.**
 
-No necesita instalación. Se abre en navegador Chrome/Edge,
-y se puede instalar como PWA para usarla sin conexión.
+## ¿Qué es esto?
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🧩 CÓMO SE USA
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-1. ABRE LA APLICACIÓN
-   - En PC: arrastra el archivo .html a Chrome, o 
-     usa un servidor local (python -m http.server 8000).
-   - En móvil (Android): súbela a GitHub Pages y ábrela 
-     en Chrome. Luego "Añadir a pantalla de inicio".
+Una herramienta que reúne tres funciones en una sola interfaz:
 
-2. ORGANIZA TUS ARCHIVOS
-   - Haz clic en "📁 Abrir carpeta" y selecciona una 
-     carpeta de tu dispositivo.
-   - Explora el árbol (panel derecho) y los archivos 
-     (panel izquierdo).
-   - Clic izquierdo en un archivo → aparece un menú 
-     en abanico con acciones (mover, copiar, etc.).
-   - Clic derecho o pulsación larga (móvil) también 
-     abre el menú.
-   - La geometría del menú (abanico, anillo, espiral, 
-     columna) se cambia desde el panel de configuración ⚙️.
+- **📁 Organizador de archivos:** navega por carpetas, mueve, copia, renombra y elimina archivos directamente desde el navegador, con un menú contextual en forma de abanico (o anillo, espiral, columna… configurable).
+- **🎮 Lanzador de juegos (GameLoader):** carga juegos HTML desde tu disco, los empaqueta automáticamente para evitar errores de CORS y los ejecuta en un contenedor virtual. Incluye un juego de demostración.
+- **🔬 Laboratorio de código:** abre cualquier archivo de texto (JS, HTML, CSS…), edítalo con resaltado de sintaxis, analiza el código en busca de malas prácticas (`var`, `console.log`, `==`), aplica correcciones automáticas y renombra variables con un clic.
 
-3. EJECUTA JUEGOS HTML
-   - Ve a la pestaña "🎮 Juegos".
-   - Pulsa "Cargar carpeta de juego" y selecciona la 
-     carpeta que contiene tu juego (debe tener index.html).
-   - El juego se guarda en la memoria local.
-   - Pulsa "▶ Ejecutar" y el juego se cargará en un 
-     iframe con todos sus archivos (CSS, JS, imágenes) 
-     resueltos. ¡Sin errores de CORS!
+Todo funciona **offline** (salvo la carga inicial de librerías externas como CodeMirror) y puede instalarse como una aplicación independiente (PWA) en tu escritorio o móvil.
 
-   - Ya incluye un juego demo (Motor Pro) para probar.
+## 🚀 Cómo se usa
 
-4. USA COMANDOS DE VOZ O TEXTO
-   - En el chat inferior escribe (o habla 🎤):
-     • "mover *.pdf a Documentos"
-     • "copiar foto_* a Fotos"
-     • "renombrar .jpeg a .jpg"
-     • "cambiar extension txt a html"
-     • "eliminar *.tmp"
+### Requisitos
+- Un navegador moderno basado en Chromium: **Chrome, Edge, Opera**. (Firefox y Safari no soportan la API de acceso a archivos local).
+- Para probarlo en local: **Python 3** (u otro servidor estático).
 
-5. PERSONALIZA EL MENÚ
-   - Pulsa el botón ⚙️.
-   - Edita el JSON: cambia geometria, buttonSize, 
-     acciones (puedes añadir/quitar botones).
-   - Pulsa "Aplicar" y el menú se actualiza al instante.
+### Primeros pasos (PC)
+1. Guarda el archivo como `organizador_total.html`.
+2. Abre una terminal en la carpeta donde lo guardaste y ejecuta:
+   ```bash
+   python -m http.server 8000
+En Chrome, visita http://localhost:8000/organizador_total.html.
 
-6. MODO OSCURO
-   - El botón 🌙 / ☀️ cambia el tema, y se recuerda 
-     para la próxima visita.
+Usa las pestañas superiores para cambiar entre:
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚙️ CÓMO FUNCIONA INTERNAMENTE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-La aplicación está organizada en módulos separados 
-que se comunican mediante un EventBus central:
+📁 Organizador – Explora y gestiona archivos.
 
-🗂️ FileSystemService
-   - Usa la File System Access API (solo Chrome/Edge)
-     para leer/escribir/mover archivos reales.
-   - Escanea carpetas recursivamente (hasta 3 niveles).
-   - Todas las operaciones (mover, copiar, etc.) piden
-     confirmación y reportan errores.
+🎮 Juegos – Carga juegos HTML o ejecuta el servidor virtual de demostración.
 
-🧠 CommandParser
-   - Interpreta comandos de texto como "mover *.pdf a X".
-   - Convierte patrones (como *.pdf) en expresiones regulares.
-   - Filtra archivos del árbol según esos patrones.
+🔬 Laboratorio – Edita y analiza código.
 
-🌀 ContextMenuUI (el menú espiral)
-   - Recibe un evento con la posición del icono.
-   - Calcula la geometría seleccionada (abanico, anillo,
-     espiral áurea, columna).
-   - Escala automáticamente según el tamaño de pantalla.
-   - Ajusta la posición si el menú se sale de los bordes.
-   - Anima los botones desde el centro hacia afuera.
+Organizador de archivos
+Haz clic en "📁 Abrir carpeta" y selecciona un directorio de tu ordenador.
 
-🌳 TreeViewUI (árbol de navegación)
-   - Renderiza el árbol de carpetas/archivos.
-   - Carga diferida: expande carpetas al hacer clic.
-   - Emite eventos al seleccionar un nodo (para mostrar
-     su contenido en el panel izquierdo).
+Navega por el árbol de carpetas (panel derecho) o por las tarjetas (panel izquierdo).
 
-📋 FileListUI (panel de resultados)
-   - Muestra los archivos como tarjetas con iconos.
-   - Según el modo de interacción (configurable), un clic
-     puede abrir el menú o seleccionar el archivo.
+Clic izquierdo en un archivo → menú contextual en abanico con acciones (Mover, Copiar, Renombrar, Eliminar, Cambiar extensión).
 
-🎮 GameLoader
-   - Al cargar una carpeta de juego, lee todos los archivos
-     (incluyendo subcarpetas) y los guarda como Blobs.
-   - Para ejecutar un juego:
-     1. Coge el index.html.
-     2. Reemplaza todas las rutas relativas (src, href, 
-        url() en CSS) por los Blobs correspondientes.
-     3. Carga ese HTML modificado en un iframe.
-   - El juego cree que está en un servidor, porque todos
-     los recursos se cargan desde objetos en memoria 
-     (data URIs/Blobs).
+Escribe comandos como mover *.pdf a Documentos en la barra de chat o usa el micrófono (solo en Chrome).
 
-⚙️ DrawerUI (panel de configuración)
-   - Carga y guarda la configuración en localStorage.
-   - Al aplicar cambios, emite un evento global para que
-     los demás componentes se actualicen.
+Juegos (GameLoader)
+Ve a la pestaña 🎮 Juegos.
 
-🎤 VoiceInput
-   - Usa la API SpeechRecognition (Chrome) para transcribir
-     voz a texto y enviarlo al chat automáticamente.
+Para probar el sistema, pulsa "🚀 Iniciar servidor virtual (demo)". Verás un juego de ejemplo.
 
-💾 PersistenceService
-   - Capa simple sobre localStorage para guardar:
-     • Configuración del menú (geometría, botones).
-     • Juegos guardados (lista de blobs).
-     • Preferencia de tema (oscuro/claro).
-     • Progreso (en el Motor Pro).
+Para cargar tu propio juego, pulsa "📂 Cargar carpeta de juego", selecciona la carpeta que contiene tu juego (debe tener un index.html). El juego se empaquetará y aparecerá en la lista. Pulsa "▶ Ejecutar" para jugar.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚠️ LIMITACIONES CONOCIDAS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- La File System Access API solo funciona en Chrome,
-  Edge y Opera (no en Firefox ni Safari). La parte de
-  juegos sí funciona en cualquier navegador si los
-  juegos se precargan manualmente.
-- En móvil, File System Access solo está disponible
-  en Android (Chrome). iOS no lo soporta aún.
-- El contenedor de juegos reescribe rutas estáticas
-  en el HTML, pero no intercepta peticiones fetch
-  dinámicas ni XMLHttpRequest (juegos muy complejos
-  podrían requerir un Service Worker adicional).
-- No es un servidor real: no ejecuta PHP, Node.js,
-  ni emula puertos TCP/UDP. Solo sirve archivos
-  estáticos.
-- Los juegos muy grandes (más de 50-100 MB) pueden
-  consumir mucha memoria al guardarse como Blobs.
+Laboratorio de código
+Ve a la pestaña 🔬 Laboratorio.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🔮 FUTURAS MEJORAS POSIBLES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- Service Worker para precargar juegos y que 
-  funcionen completamente offline.
-- Soporte para archivos ZIP (extraer automáticamente).
-- Proxy de fetch para juegos más complejos.
-- Sincronización con cuentas en la nube (opcional).
-- Internacionalización.
+Desde el explorador de archivos (pestaña Organizador), haz clic en un archivo .js, .html, .css, etc. Se abrirá automáticamente en el editor.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+También puedes escribir código directamente.
+
+Selecciona el lenguaje (JavaScript o HTML) en el desplegable.
+
+Usa los botones para:
+
+🔍 Analizar – Busca var, console.log, == y falta de alt en imágenes.
+
+🔧 Corregir 'var' – Cambia todos los var por let.
+
+🗑️ Quitar logs – Elimina todas las líneas con console.log.
+
+✏️ Renombrar – Coloca el cursor sobre una variable y renómbrala en todo el archivo.
+
+💾 Guardar – Guarda los cambios directamente en el archivo original.
+
+❓ Ayuda – Muestra consejos rápidos de buenas prácticas.
+
+⚙️ Cómo funciona
+Arquitectura
+El código está organizado en módulos independientes que se comunican a través de un EventBus (arquitectura hexagonal simplificada):
+
+EventBus – Permite que los componentes reaccionen a eventos sin conocerse entre sí.
+
+PersistenceService – Guarda configuraciones y lista de juegos en localStorage.
+
+FileSystemService – Toda la interacción con la File System Access API (abrir carpetas, leer, escribir, mover, copiar…).
+
+GeometryEngine – Calcula las posiciones de los botones del menú contextual según la geometría elegida (abanico, anillo, espiral, columna).
+
+ContextMenuUI – Dibuja y anima el menú contextual.
+
+TreeViewUI y FileListUI – Muestran la estructura de carpetas y los archivos.
+
+GameLoaderService – Crea un “servidor virtual” en memoria usando Blob URLs para ejecutar juegos sin errores de CORS.
+
+CodeEditorUI – Carga CodeMirror dinámicamente y proporciona análisis de código básico.
+
+VoiceInput – Integra la Web Speech API para reconocimiento de voz.
+
+App – Orquesta todos los componentes, maneja las pestañas y las acciones del usuario.
+
+APIs del navegador utilizadas
+File System Access API (showDirectoryPicker, getFile, createWritable, remove…)
+
+Web Speech API (SpeechRecognition)
+
+Blob URLs (URL.createObjectURL, revokeObjectURL)
+
+CodeMirror (librería externa para el editor)
+
+localStorage para persistencia
+
+¿Por qué hace falta un servidor local?
+La API de acceso al sistema de archivos solo funciona en contextos seguros (https:// o http://localhost). Al usar python -m http.server creamos un servidor local que cumple ese requisito.
+
+⚠️ Limitaciones conocidas
+Solo funciona en navegadores basados en Chromium (Chrome, Edge, Opera).
+
+Los permisos de carpeta no se guardan entre sesiones; tendrás que volver a seleccionar la carpeta al recargar la página.
+
+Mover o copiar archivos muy grandes (>100 MB) puede ser lento porque se leen completamente en memoria.
+
+El analizador de código es básico (reglas personalizadas). No reemplaza a un linter profesional como ESLint.
+
+El GameLoader no soporta juegos con módulos ES6 (import/export) a menos que los empaquetes antes con una herramienta como esbuild.
+
+🧑‍💻 Créditos y filosofía
+Este proyecto nació como un experimento en pocas horas, con el objetivo de aprender, divertirse y demostrar que se pueden crear herramientas potentes con tecnologías web estándar, sin dependencias pesadas.
+
+La arquitectura es modular, el código está comentado y cada pieza puede reemplazarse o ampliarse fácilmente. Si quieres añadir otra pestaña, otro tipo de análisis o una nueva geometría de menú, solo tienes que crear un nuevo componente y conectarlo al EventBus.
+
+¿Dudas, ideas, mejoras? ¡A trastear se ha dicho! 🚀🌀
