@@ -1,230 +1,519 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-  <title>🌀 Asistente Total + Avatar + Escucha</title>
-  <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Asistente%20Total%22%2C%22short_name%22%3A%22Asistente%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f4f6f9%22%2C%22theme_color%22%3A%22%233b82f6%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%253D'http%253A%2F%2Fwww.w3.org%2F2000%2Fsvg'%2520viewBox%253D'0%25200%2520100%2520100'%253E%253Ccircle%2520cx%253D'50'%2520cy%253D'50'%2520r%253D'45'%2520fill%253D'%25233b82f6'%2F%253E%253Ctext%2520x%253D'50'%2520y%253D'60'%2520text-anchor%253D'middle'%2520fill%253D'white'%2520font-size%253D'40'%253E🌀%253C%2Ftext%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22100x100%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
-  <style>
-    /* ===== RESET & VARIABLES ===== */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; }
-    :root {
-      --bg: #f4f6f9; --surface: #fff; --border: #e9eef2;
-      --text: #1e293b; --text-secondary: #475569;
-      --primary: #0f172a; --primary-text: #fff;
-      --accent: #3b82f6; --danger: #ef4444;
-      --radius: 16px; --transition: 0.2s;
-      --font: 'Inter', system-ui, sans-serif;
-    }
-    body.dark {
-      --bg: #0f172a; --surface: #1e293b; --border: #334155;
-      --text: #e2e8f0; --text-secondary: #94a3b8;
-      --primary: #e2e8f0; --primary-text: #0f172a;
-    }
-    body {
-      font-family: var(--font); background: var(--bg); color: var(--text);
-      height: 100vh; display: flex; flex-direction: column;
-      transition: background var(--transition), color var(--transition);
-      overflow: hidden;
-    }
-    .topbar {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 16px; background: var(--surface); border-bottom: 1px solid var(--border);
-      gap: 12px; flex-wrap: wrap;
-    }
-    .topbar .actions { display: flex; gap: 8px; align-items: center; }
-    .btn {
-      border: none; padding: 8px 16px; border-radius: 40px; cursor: pointer;
-      background: var(--primary); color: var(--primary-text); font-weight: 500;
-      white-space: nowrap;
-    }
-    .btn.secondary { background: var(--border); color: var(--text); }
-    .btn.icon { width: 36px; height: 36px; padding: 0; display: grid; place-items: center; border-radius: 50%; font-size: 1.2rem; }
-    .tabs { display: flex; gap: 8px; margin: 8px 16px; flex-wrap: wrap; }
-    .tab {
-      padding: 8px 20px; border-radius: 40px; cursor: pointer; font-weight: 500;
-      background: var(--surface); color: var(--text-secondary); border: 1px solid var(--border);
-    }
-    .tab.active { background: var(--accent); color: white; border-color: var(--accent); }
-    .main { display: flex; flex: 1; overflow: hidden; }
-    .panel-left { width: 65%; display: flex; flex-direction: column; border-right: 1px solid var(--border); overflow: hidden; }
-    .panel-right { width: 35%; display: flex; flex-direction: column; background: var(--surface); overflow-y: auto; }
-    @media (max-width: 768px) {
-      .panel-right { position: fixed; top: 0; right: 0; height: 100%; width: 80%; transform: translateX(100%); transition: transform 0.3s; z-index: 50; }
-      .panel-right.open { transform: translateX(0); }
-      .panel-left { width: 100%; border-right: none; }
-      .tree-toggle { display: block; }
-    }
-    .tree-toggle { display: none; }
-    .chat-bar { display: flex; gap: 8px; padding: 8px 16px; align-items: center; background: var(--surface); border-bottom: 1px solid var(--border); }
-    .chat-bar input { flex: 1; padding: 8px 16px; border-radius: 40px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
-    .mic-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: var(--accent); color: white; cursor: pointer; font-size: 1.2rem; }
-    .file-list { flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start; }
-    .file-card {
-      width: 140px; padding: 12px; background: var(--surface); border-radius: var(--radius);
-      border: 2px solid transparent; display: flex; flex-direction: column; align-items: center; gap: 8px;
-      cursor: pointer; transition: all 0.2s;
-    }
-    .file-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-    .file-card.selected { border-color: var(--accent); background: rgba(59,130,246,0.1); }
-    .file-icon { font-size: 2.5rem; }
-    .file-name { font-size: 0.85rem; word-break: break-all; text-align: center; }
-    .tree { padding: 8px; user-select: none; }
-    .tree-item { display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px; cursor: pointer; }
-    .tree-item:hover { background: var(--bg); }
-    .tree-item.selected { background: var(--accent); color: white; }
-    .tree-item .icon { width: 20px; text-align: center; }
-    .tree-item .name { font-size: 0.9rem; word-break: break-all; }
-    .tree-children { margin-left: 16px; }
-    .drawer {
-      position: fixed; top: 0; right: 0; height: 100%; width: 320px;
-      background: var(--surface); border-left: 1px solid var(--border);
-      transform: translateX(100%); transition: transform 0.3s; z-index: 60;
-      padding: 16px; display: flex; flex-direction: column; gap: 12px;
-    }
-    .drawer.open { transform: translateX(0); }
-    .drawer textarea { flex: 1; width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; resize: none; font-family: monospace; font-size: 0.85rem; }
-    .drawer .btn-row { display: flex; gap: 8px; justify-content: flex-end; }
-    .context-menu { position: fixed; pointer-events: none; z-index: 1000; width: 0; height: 0; }
-    .context-menu.active { pointer-events: auto; }
-    .context-btn {
-      position: absolute; border-radius: 50%; border: none;
-      background: var(--surface); color: var(--text);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      cursor: pointer; transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s;
-      opacity: 0; transform: translate(-50%, -50%) scale(0);
-      display: grid; place-items: center;
-    }
-    .context-btn.visible { opacity: 1; }
-    .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 45; display: none; }
-    .overlay.show { display: block; }
-    .geometry-badge { display: inline-block; background: var(--accent); color: white; padding: 2px 10px; border-radius: 20px; font-size: 0.7rem; margin-left: 8px; }
-    .game-list { flex: 1; overflow-y: auto; padding: 8px; }
-    .game-card { background: var(--surface); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; border: 1px solid var(--border); }
-    .game-frame { width: 100%; height: 70vh; border: 1px solid var(--border); border-radius: var(--radius); }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0" />
+<title>Asistente Total · Modular Hexagonal</title>
+<style>
+  /* ═══════════════════════════════════════════════════════════
+     RESET Y VARIABLES GLOBALES
+     ═══════════════════════════════════════════════════════════ */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f4f6f9; --surface: #fff; --border: #e9eef2;
+    --text: #1e293b; --text-secondary: #475569;
+    --primary: #0f172a; --primary-text: #fff;
+    --accent: #3b82f6; --danger: #ef4444; --warning: #f59e0b; --ok: #10b981;
+    --radius: 14px; --transition: 0.2s;
+    --font: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+  body.dark {
+    --bg: #0f172a; --surface: #1e293b; --border: #334155;
+    --text: #e2e8f0; --text-secondary: #94a3b8;
+    --primary: #e2e8f0; --primary-text: #0f172a;
+  }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: var(--font); background: var(--bg); color: var(--text);
+    display: flex; flex-direction: column;
+    transition: background var(--transition), color var(--transition);
+  }
 
-    /* Laboratorio */
-    .lab-container { display: flex; flex-direction: column; height: 100%; padding: 8px; gap: 8px; }
-    .lab-toolbar { display: flex; flex-wrap: wrap; gap: 6px; }
-    .lab-editor { flex: 1; min-height: 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-    .lab-problems { max-height: 150px; overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px; }
-    .lab-problems .problem-item { padding: 4px 8px; margin-bottom: 4px; border-left: 4px solid; border-radius: 4px; cursor: pointer; background: var(--bg); font-size: 0.85rem; }
-    .lab-problems .problem-item:hover { background: var(--border); }
-    .lab-help-panel { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--surface); border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); padding: 20px; z-index: 100; display: none; max-width: 500px; max-height: 80vh; overflow-y: auto; }
-    .CodeMirror { height: 100% !important; border-radius: var(--radius); }
+  /* ═══════════════════════════════════════════════════════════
+     TOPBAR Y PESTAÑAS
+     ═══════════════════════════════════════════════════════════ */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--border);
+    gap: 12px; flex-wrap: wrap;
+  }
+  .topbar h1 { font-size: 1.15rem; font-weight: 500; }
+  .topbar .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .badge {
+    display: inline-block; padding: 2px 10px; border-radius: 20px;
+    background: var(--accent); color: #fff; font-size: 0.7rem; margin-left: 8px;
+  }
+  .btn {
+    border: none; padding: 8px 14px; border-radius: 40px; cursor: pointer;
+    background: var(--primary); color: var(--primary-text); font-weight: 500;
+    font-family: inherit; font-size: 0.9rem; white-space: nowrap;
+    transition: opacity var(--transition);
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn.secondary { background: var(--border); color: var(--text); }
+  .btn.danger { background: var(--danger); color: #fff; }
+  .btn.icon { width: 36px; height: 36px; padding: 0; display: grid; place-items: center; border-radius: 50%; font-size: 1.1rem; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    /* Avatar y escucha */
-    .avatar-canvas { border: 1px solid var(--border); border-radius: 50%; background: #2a2a3c; margin: 0.5rem 0; max-width: 100%; height: auto; }
-    .emotion-indicator { width: 80px; height: 80px; border-radius: 50%; margin: 0.5rem 0; transition: background 0.3s; background: #555; }
-    .emotion-positivo { background: #4caf50 !important; }
-    .emotion-negativo { background: #f44336 !important; }
-    .emotion-sorpresa { background: #ff9800 !important; }
-    .emotion-enfado { background: #9c27b0 !important; }
-    .emotion-neutro { background: #607d8b !important; }
-    .historial { width: 100%; margin-top: 0.5rem; }
-    .item-historial { background: var(--surface); border-radius: 8px; padding: 0.4rem; margin-bottom: 0.3rem; font-size: 0.9rem; display: flex; justify-content: space-between; }
-    .item-historial .emocion-tag { font-size: 0.8rem; padding: 0.1rem 0.4rem; border-radius: 12px; background: var(--accent); color: white; }
-    .aviso-etico { background: var(--surface); padding: 0.5rem; border-radius: 8px; margin: 0.2rem 0; text-align: center; font-size: 0.8rem; color: var(--text-secondary); }
-    .log-container { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px; max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 0.8rem; }
-    .buttons { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; margin: 0.5rem 0; }
-    .emotion-btns button { font-size: 1.7rem; padding: 0.3rem 0.7rem; border-radius: 50%; min-width: 46px; min-height: 46px; border: none; background: var(--accent); color: white; cursor: pointer; }
-    .emotion-btns button:hover { background: #6a6aaa; }
-  </style>
+  .tabs { display: flex; gap: 8px; padding: 8px 16px; flex-wrap: wrap; background: var(--bg); }
+  .tab {
+    padding: 8px 18px; border-radius: 40px; cursor: pointer; font-weight: 500;
+    background: var(--surface); color: var(--text-secondary);
+    border: 1px solid var(--border); font-size: 0.9rem;
+    transition: all var(--transition);
+  }
+  .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* ═══════════════════════════════════════════════════════════
+     PANELES
+     ═══════════════════════════════════════════════════════════ */
+  .main { flex: 1; overflow: hidden; position: relative; }
+  .panel {
+    display: none; height: 100%; width: 100%;
+    flex-direction: column; overflow: auto;
+  }
+  .panel.active { display: flex; }
+  .panel-organizador { flex-direction: row; }
+
+  /* ═══════════════════════════════════════════════════════════
+     ORGANIZADOR: layout
+     ═══════════════════════════════════════════════════════════ */
+  .organizador-left { flex: 1; display: flex; flex-direction: column; border-right: 1px solid var(--border); overflow: hidden; }
+  .organizador-right { width: 320px; display: flex; flex-direction: column; background: var(--surface); overflow-y: auto; }
+  .chat-bar {
+    display: flex; gap: 8px; padding: 8px 16px; align-items: center;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+  }
+  .chat-bar input {
+    flex: 1; padding: 8px 14px; border-radius: 40px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--text);
+    font-family: inherit; font-size: 0.9rem;
+  }
+  .chat-bar input:focus { outline: none; border-color: var(--accent); }
+  .mic-btn {
+    width: 36px; height: 36px; border-radius: 50%; border: none;
+    background: var(--accent); color: #fff; cursor: pointer; font-size: 1.1rem;
+  }
+  .mic-btn.listening { background: var(--danger); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+
+  .file-list { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-wrap: wrap; gap: 10px; align-content: flex-start; }
+  .file-card {
+    width: 140px; padding: 12px; background: var(--surface); border-radius: var(--radius);
+    border: 2px solid transparent; display: flex; flex-direction: column; align-items: center;
+    gap: 8px; cursor: pointer; transition: all var(--transition);
+  }
+  .file-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: translateY(-2px); }
+  .file-card.selected { border-color: var(--accent); background: rgba(59,130,246,0.1); }
+  .file-icon { font-size: 2.2rem; }
+  .file-name { font-size: 0.82rem; word-break: break-all; text-align: center; }
+
+  .tree { padding: 8px; user-select: none; }
+  .tree-item {
+    display: flex; align-items: center; gap: 6px; padding: 4px 8px;
+    border-radius: 8px; cursor: pointer; font-size: 0.9rem;
+  }
+  .tree-item:hover { background: var(--bg); }
+  .tree-item.selected { background: var(--accent); color: #fff; }
+  .tree-item .icon { width: 18px; text-align: center; }
+  .tree-item .name { word-break: break-all; }
+  .tree-children { margin-left: 18px; }
+
+  /* ═══════════════════════════════════════════════════════════
+     MENÚ CONTEXTUAL RADIAL
+     ═══════════════════════════════════════════════════════════ */
+  .context-menu { position: fixed; pointer-events: none; z-index: 1000; width: 0; height: 0; }
+  .context-menu.active { pointer-events: auto; }
+  .context-btn {
+    position: absolute; border-radius: 50%; border: none;
+    background: var(--surface); color: var(--text);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    cursor: pointer; opacity: 0; transform: translate(-50%, -50%) scale(0);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s;
+    display: grid; place-items: center;
+  }
+  .context-btn.visible { opacity: 1; }
+
+  /* ═══════════════════════════════════════════════════════════
+     CAJÓN DE CONFIGURACIÓN
+     ═══════════════════════════════════════════════════════════ */
+  .drawer {
+    position: fixed; top: 0; right: 0; height: 100%; width: 360px; max-width: 92vw;
+    background: var(--surface); border-left: 1px solid var(--border);
+    transform: translateX(100%); transition: transform 0.3s; z-index: 60;
+    padding: 16px; display: flex; flex-direction: column; gap: 12px;
+  }
+  .drawer.open { transform: translateX(0); }
+  .drawer h3 { font-size: 1rem; }
+  .drawer textarea {
+    flex: 1; width: 100%; background: var(--bg); color: var(--text);
+    border: 1px solid var(--border); border-radius: var(--radius); padding: 12px;
+    resize: none; font-family: monospace; font-size: 0.85rem;
+  }
+  .drawer .btn-row { display: flex; gap: 8px; justify-content: flex-end; }
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+    z-index: 45; display: none;
+  }
+  .overlay.show { display: block; }
+
+  /* ═══════════════════════════════════════════════════════════
+     JUEGO DE TEXTO
+     ═══════════════════════════════════════════════════════════ */
+  .textgame-wrap { padding: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; height: 100%; }
+  @media (max-width: 900px) { .textgame-wrap { grid-template-columns: 1fr; height: auto; } }
+  .card {
+    background: var(--surface); border-radius: var(--radius); padding: 16px;
+    border: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px;
+  }
+  .card h2 { font-size: 0.95rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+  .card textarea {
+    width: 100%; min-height: 120px; background: var(--bg); color: var(--text);
+    border: 1px solid var(--border); border-radius: 10px; padding: 10px;
+    font-family: inherit; font-size: 0.9rem; resize: vertical;
+  }
+  .card textarea:focus { outline: none; border-color: var(--accent); }
+  .chip {
+    display: inline-block; padding: 2px 10px; border-radius: 12px;
+    font-size: 0.75rem; margin: 2px 4px 2px 0; background: var(--border); color: var(--text);
+  }
+  .chip.tag { background: #1e3a5f; color: #93c5fd; }
+  .chip.entity { background: #3b1e5f; color: #d8b4fe; }
+  .chip.syn { background: #5f3b1e; color: #fdba74; }
+  .chip.action { background: #5f1e1e; color: #fca5a5; }
+  .kv { display: flex; justify-content: space-between; font-size: 0.88rem; padding: 4px 0; border-bottom: 1px solid var(--border); }
+  .kv:last-child { border-bottom: none; }
+  .kv .k { color: var(--text-secondary); }
+  .kv .v { font-weight: 600; font-family: ui-monospace, monospace; }
+  .empty { color: var(--text-secondary); font-style: italic; font-size: 0.88rem; }
+
+  /* ═══════════════════════════════════════════════════════════
+     LABORATORIO
+     ═══════════════════════════════════════════════════════════ */
+  .lab-wrap { display: flex; flex-direction: column; height: 100%; padding: 12px; gap: 10px; }
+  .lab-toolbar { display: flex; flex-wrap: wrap; gap: 6px; }
+  .lab-editor {
+    flex: 1; min-height: 200px; border: 1px solid var(--border); border-radius: var(--radius);
+    background: #0f172a; color: #e2e8f0; padding: 12px;
+    font-family: ui-monospace, 'Courier New', monospace; font-size: 0.9rem;
+    resize: none; line-height: 1.5; tab-size: 2;
+  }
+  .lab-editor:focus { outline: none; border-color: var(--accent); }
+  .lab-problems {
+    max-height: 220px; overflow-y: auto; background: var(--surface);
+    border: 1px solid var(--border); border-radius: var(--radius); padding: 10px;
+  }
+  .problem-item {
+    padding: 6px 10px; margin-bottom: 6px; border-left: 4px solid; border-radius: 6px;
+    background: var(--bg); font-size: 0.85rem; cursor: pointer;
+  }
+  .problem-item:hover { background: var(--border); }
+  .problem-item .sev { font-size: 0.7rem; padding: 1px 8px; border-radius: 10px; color: #fff; margin-left: 6px; }
+  .sev.critical { background: #ef4444; }
+  .sev.high { background: #f59e0b; }
+  .sev.medium { background: #3b82f6; }
+  .sev.low { background: #10b981; }
+  .sev.info { background: #8b5cf6; }
+
+  /* ═══════════════════════════════════════════════════════════
+     AVATAR
+     ═══════════════════════════════════════════════════════════ */
+  .avatar-wrap {
+    padding: 16px; display: flex; flex-direction: column;
+    align-items: center; gap: 12px; overflow-y: auto;
+  }
+  .avatar-canvas {
+    border: 1px solid var(--border); border-radius: 50%;
+    background: #2a2a3c; max-width: 100%; height: auto;
+  }
+  .avatar-wrap textarea {
+    width: 100%; max-width: 420px; min-height: 70px; padding: 10px;
+    border-radius: 10px; background: var(--surface); color: var(--text);
+    border: 1px solid var(--border); font-family: inherit; resize: vertical;
+  }
+  .buttons { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .emotion-btns button {
+    font-size: 1.5rem; padding: 6px 12px; border-radius: 50%;
+    min-width: 44px; min-height: 44px; border: none;
+    background: var(--border); color: var(--text); cursor: pointer;
+  }
+  .emotion-btns button.active { background: var(--accent); color: #fff; }
+  .aviso-etico {
+    background: var(--surface); padding: 8px 14px; border-radius: 10px;
+    text-align: center; font-size: 0.8rem; color: var(--text-secondary);
+    border-left: 3px solid var(--warning);
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     TRANSCRIPTOR
+     ═══════════════════════════════════════════════════════════ */
+  .transcriptor-wrap {
+    padding: 16px; display: flex; flex-direction: column;
+    align-items: center; gap: 12px; overflow-y: auto;
+  }
+  .emotion-indicator {
+    width: 70px; height: 70px; border-radius: 50%;
+    transition: background 0.3s; background: #607d8b;
+    box-shadow: 0 0 20px rgba(0,0,0,0.2);
+  }
+  .emotion-indicator.emocion-positivo { background: #4caf50; box-shadow: 0 0 20px #4caf5088; }
+  .emotion-indicator.emocion-negativo { background: #f44336; box-shadow: 0 0 20px #f4433688; }
+  .emotion-indicator.emocion-sorpresa { background: #ff9800; box-shadow: 0 0 20px #ff980088; }
+  .emotion-indicator.emocion-enfado { background: #9c27b0; box-shadow: 0 0 20px #9c27b088; }
+  .emotion-indicator.emocion-neutro { background: #607d8b; }
+  #transcripcion-en-vivo {
+    font-size: 1.3rem; min-height: 2.5rem; padding: 10px;
+    background: var(--surface); border-radius: 10px; width: 100%;
+    text-align: center; border: 1px solid var(--border);
+  }
+  .historial { width: 100%; max-width: 500px; }
+  .item-historial {
+    background: var(--surface); border-radius: 8px; padding: 8px 12px;
+    margin-bottom: 6px; font-size: 0.9rem;
+    display: flex; justify-content: space-between; gap: 12px;
+  }
+  .item-historial .emocion-tag {
+    font-size: 0.75rem; padding: 2px 8px; border-radius: 10px;
+    background: var(--accent); color: #fff; white-space: nowrap;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     AUDIO PLANETARIO
+     ═══════════════════════════════════════════════════════════ */
+  .audio-wrap {
+    padding: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  }
+  @media (max-width: 850px) { .audio-wrap { grid-template-columns: 1fr; } }
+  .audio-panel {
+    background: rgba(20, 20, 50, 0.06);
+    border: 1px solid var(--border); border-radius: var(--radius); padding: 14px;
+  }
+  body.dark .audio-panel { background: rgba(20,20,50,0.5); }
+  .audio-panel h2 { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .audio-panel select, .audio-panel button, .audio-panel input[type="range"] {
+    width: 100%; padding: 8px 12px; margin-bottom: 8px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface); color: var(--text);
+    font-size: 0.9rem; font-family: inherit; cursor: pointer;
+  }
+  .audio-panel input[type="file"] { display: none; }
+  .file-label {
+    display: block; text-align: center; padding: 10px;
+    background: var(--accent); color: #fff; border-radius: 8px;
+    cursor: pointer; margin-bottom: 10px; font-size: 0.9rem;
+  }
+  .keyboard { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
+  .keyboard button {
+    padding: 10px 4px; font-weight: bold; font-size: 0.85rem;
+    background: var(--surface); border: 2px solid var(--border);
+    text-shadow: none; margin: 0;
+  }
+  .keyboard button.playing {
+    background: linear-gradient(180deg, #ff8800, #cc4400);
+    border-color: #ffaa00; color: #fff;
+  }
+  .atmo-data { font-size: 0.82rem; line-height: 1.6; color: var(--text-secondary); margin-top: 6px; }
+  .atmo-data span { color: var(--accent); font-weight: bold; }
+  .audio-panel canvas { width: 100%; border-radius: 8px; background: #0a0a18; margin-top: 8px; display: block; }
+  .wave-canvas { height: 140px; }
+  .analyser-canvas { height: 70px; }
+  .minimap {
+    position: relative; width: 100%; height: 140px;
+    background: radial-gradient(circle at center, #1a2a3a 0%, #0a0a18 100%);
+    border-radius: 8px; overflow: hidden; margin-top: 8px;
+  }
+  .source-dot, .listener-dot {
+    position: absolute; width: 14px; height: 14px; border-radius: 50%;
+    transform: translate(-50%, -50%); cursor: grab;
+  }
+  .source-dot { background: #ff5500; box-shadow: 0 0 12px #ff5500; z-index: 2; }
+  .listener-dot { background: #00ccff; box-shadow: 0 0 12px #00ccff; z-index: 3; pointer-events: none; }
+  .params-info {
+    font-family: ui-monospace, monospace; font-size: 0.75rem; color: var(--text-secondary);
+    margin-top: 8px; background: var(--bg); padding: 8px; border-radius: 6px;
+  }
+  .status { text-align: center; padding: 8px; border-radius: 6px; font-weight: 600; margin-top: 6px; font-size: 0.85rem; }
+  .status.ok { color: var(--ok); background: rgba(16,185,129,0.1); }
+  .status.partial { color: var(--warning); background: rgba(245,158,11,0.1); }
+  .status.rejected { color: var(--danger); background: rgba(239,68,68,0.1); }
+  .recording-panel { display: flex; gap: 8px; margin-top: 10px; }
+  .recording-panel button { flex: 1; margin: 0; }
+  .gain-control { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .gain-control label { flex: 1; font-size: 0.85rem; color: var(--text-secondary); }
+  .gain-control input[type="range"] { flex: 2; margin: 0; }
+  .gain-control span { flex: 0 0 50px; text-align: right; color: var(--accent); font-weight: bold; font-size: 0.85rem; }
+  #downloadLink {
+    display: none; color: var(--accent); text-align: center;
+    margin-top: 8px; word-break: break-all; font-size: 0.85rem;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     LOG
+     ═══════════════════════════════════════════════════════════ */
+  .log-wrap { padding: 16px; display: flex; flex-direction: column; gap: 10px; height: 100%; }
+  .log-container {
+    flex: 1; background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px;
+    font-family: ui-monospace, monospace; font-size: 0.8rem;
+    overflow-y: auto; white-space: pre-wrap; line-height: 1.5;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     NOTIFICACIONES
+     ═══════════════════════════════════════════════════════════ */
+  .notification {
+    position: fixed; top: 20px; right: 20px; background: var(--surface);
+    padding: 10px 16px; border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    border-left: 4px solid var(--accent);
+    transform: translateX(120%); transition: transform 0.3s;
+    max-width: 380px; z-index: 2000; font-size: 0.9rem;
+  }
+  .notification.show { transform: translateX(0); }
+  .notification.error { border-left-color: var(--danger); }
+  .notification.warning { border-left-color: var(--warning); }
+  .notification.ok { border-left-color: var(--ok); }
+
+  /* Móvil: panel derecho como cajón */
+  @media (max-width: 768px) {
+    .organizador-right {
+      position: fixed; top: 0; right: 0; height: 100%; width: 80%;
+      transform: translateX(100%); transition: transform 0.3s; z-index: 50;
+    }
+    .organizador-right.open { transform: translateX(0); }
+    .tree-toggle { display: grid !important; }
+  }
+  .tree-toggle { display: none !important; }
+</style>
 </head>
 <body>
-  <div class="topbar">
-    <h2 style="font-size:1.3rem;">🌀 Asistente Total <span id="geometry-badge" class="geometry-badge">abanico</span></h2>
-    <div class="actions">
-      <button id="btn-open-folder" class="btn">📁 Abrir carpeta</button>
-      <button id="btn-toggle-tree" class="btn icon tree-toggle" title="Árbol">🌳</button>
-      <button id="btn-toggle-theme" class="btn icon">🌙</button>
-      <button id="btn-open-drawer" class="btn icon" title="Configurar menú">⚙️</button>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TOPBAR
+     ═══════════════════════════════════════════════════════════ -->
+<div class="topbar">
+  <h1>🌀 Asistente Total <span id="geometryBadge" class="badge">abanico</span></h1>
+  <div class="actions">
+    <button id="btnOpenFolder" class="btn">📁 Abrir carpeta</button>
+    <button id="btnToggleTree" class="btn icon tree-toggle" title="Árbol">🌳</button>
+    <button id="btnToggleTheme" class="btn icon" title="Tema">🌙</button>
+    <button id="btnOpenDrawer" class="btn icon" title="Configuración">⚙️</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PESTAÑAS
+     ═══════════════════════════════════════════════════════════ -->
+<div class="tabs" id="tabs">
+  <div class="tab active" data-tab="organizador">📁 Organizador</div>
+  <div class="tab" data-tab="texto">📝 Texto</div>
+  <div class="tab" data-tab="laboratorio">🔬 Lab</div>
+  <div class="tab" data-tab="avatar">😸 Avatar</div>
+  <div class="tab" data-tab="escuchar">🎤 Escuchar</div>
+  <div class="tab" data-tab="audio">🎵 Audio</div>
+  <div class="tab" data-tab="log">📋 Log</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PANELES
+     ═══════════════════════════════════════════════════════════ -->
+<div class="main">
+
+  <!-- ORGANIZADOR -->
+  <div class="panel panel-organizador active" data-panel="organizador">
+    <div class="organizador-left">
+      <div class="chat-bar">
+        <input type="text" id="chatInput" placeholder="Ej: mover *.pdf a Documentos" />
+        <button id="micChatBtn" class="mic-btn" title="Dictar">🎤</button>
+        <button id="sendBtn" class="btn">Enviar</button>
+      </div>
+      <div class="file-list" id="fileList">
+        <div class="empty" style="padding:20px;text-align:center;">Selecciona una carpeta o usa "Abrir carpeta"</div>
+      </div>
+    </div>
+    <div class="organizador-right" id="treePanel">
+      <div style="padding:10px;font-weight:600;border-bottom:1px solid var(--border);">📁 Explorador</div>
+      <div class="tree" id="treeContainer">
+        <div class="empty" style="padding:8px;">No hay carpeta abierta</div>
+      </div>
     </div>
   </div>
 
-  <div class="tabs">
-    <div id="tab-organizador" class="tab active">📁 Organizador</div>
-    <div id="tab-juegos" class="tab">🎮 Juegos</div>
-    <div id="tab-laboratorio" class="tab">🔬 Lab</div>
-    <div id="tab-avatar" class="tab">😸 Avatar</div>
-    <div id="tab-escuchar" class="tab">🎤 Escuchar</div>
-    <div id="tab-log" class="tab">📋 Log</div>
+  <!-- JUEGO DE TEXTO -->
+  <div class="panel" data-panel="texto">
+    <div class="textgame-wrap">
+      <div class="card">
+        <h2>📥 Entrada</h2>
+        <textarea id="textoInput" placeholder="Ej: lanzo una bola de fuego y luego invoco escarcha glacial con magia arcana."></textarea>
+        <div class="buttons">
+          <button class="btn" id="textoRunBtn">▶ Ejecutar</button>
+          <button class="btn secondary" id="textoDemoBtn">🎲 Demo</button>
+          <button class="btn secondary" id="textoClearBtn">🗑 Limpiar</button>
+        </div>
+        <div class="empty" id="textoStatus">Config demo cargada. Pulsa ▶ para probar.</div>
+      </div>
+      <div class="card">
+        <h2>📤 Resultado</h2>
+        <div id="textoResult"><div class="empty">Ejecuta para ver resultados.</div></div>
+      </div>
+    </div>
   </div>
 
-  <div class="main">
-    <!-- PANEL ORGANIZADOR -->
-    <div id="panel-organizador" style="display:flex; flex:1;">
-      <div class="panel-left" id="left-panel">
-        <div class="chat-bar">
-          <input type="text" id="chat-input" placeholder="Ej: mover *.pdf a Documentos" />
-          <button id="mic-btn" class="mic-btn">🎤</button>
-          <button id="send-btn" class="btn">Enviar</button>
-        </div>
-        <div class="file-list" id="file-list">
-          <div style="padding:20px;text-align:center;color:var(--text-secondary);">Selecciona una carpeta en el árbol o usa "Abrir carpeta"</div>
-        </div>
+  <!-- LABORATORIO -->
+  <div class="panel" data-panel="laboratorio">
+    <div class="lab-wrap">
+      <div class="lab-toolbar">
+        <button class="btn" id="labAnalyze">🔍 Analizar</button>
+        <button class="btn secondary" id="labFixVar">🔧 Corregir var</button>
+        <button class="btn secondary" id="labRemoveLogs">🗑 Quitar logs</button>
+        <button class="btn secondary" id="labRename">✏️ Renombrar</button>
+        <button class="btn secondary" id="labLoadRules">📂 Cargar reglas JSON</button>
+        <button class="btn" id="labSave">💾 Guardar</button>
       </div>
-      <div class="panel-right" id="right-panel">
-        <div style="padding:8px;font-weight:600;border-bottom:1px solid var(--border);">📁 Explorador</div>
-        <div class="tree" id="tree-container">
-          <div style="padding:8px;color:var(--text-secondary);">No hay carpeta abierta</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- PANEL JUEGOS -->
-    <div id="panel-juegos" style="display:none; flex:1; padding:16px; overflow-y:auto;">
-      <button id="btn-load-game" class="btn">📂 Cargar carpeta de juego</button>
-      <button id="btn-start-server" class="btn secondary" style="margin-left:8px;">🚀 Iniciar servidor virtual (demo)</button>
-      <div id="game-list" class="game-list"></div>
-    </div>
-
-    <!-- PANEL LABORATORIO -->
-    <div id="panel-laboratorio" style="display:none; flex:1; flex-direction:column;">
-      <div class="lab-container">
-        <div class="lab-toolbar">
-          <select id="lab-language"><option value="javascript">JavaScript</option><option value="html">HTML</option></select>
-          <button id="lab-analyze" class="btn">🔍 Analizar</button>
-          <button id="lab-fix-var" class="btn secondary">🔧 Corregir 'var'</button>
-          <button id="lab-remove-logs" class="btn secondary">🗑️ Quitar logs</button>
-          <button id="lab-rename" class="btn secondary">✏️ Renombrar</button>
-          <button id="lab-save" class="btn">💾 Guardar</button>
-          <button id="lab-help" class="btn icon">❓</button>
-        </div>
-        <div class="lab-editor" id="lab-editor"></div>
-        <div class="lab-problems" id="lab-problems">
-          <div style="color:var(--text-secondary); text-align:center;">Los problemas aparecerán aquí tras analizar.</div>
-        </div>
+      <input type="file" id="labRulesInput" accept=".json,application/json" hidden />
+      <textarea id="labEditor" class="lab-editor" spellcheck="false">// Pega código JS aquí o abre un fichero desde el Organizador
+var x = 1;
+var y = 2;
+if (x == y) {
+  console.log("iguales");
+}
+// TODO: revisar esta función
+eval("alert('peligro')");</textarea>
+      <div class="lab-problems" id="labProblems">
+        <div class="empty">Los problemas aparecerán aquí tras analizar.</div>
       </div>
     </div>
+  </div>
 
-    <!-- PANEL AVATAR (caritas) -->
-    <div id="panel-avatar" style="display:none; flex:1; flex-direction:column; align-items:center; padding:1rem; overflow-y:auto;">
-      <div class="aviso-etico" id="aviso-avatar">Este asistente genera voz y expresión sintética. No es una persona real.</div>
-      <canvas id="cara" class="avatar-canvas" width="280" height="280"></canvas>
-      <textarea id="texto-avatar" rows="3" placeholder="Escribe o pega texto..." style="width:100%; max-width:400px; margin:0.5rem; padding:0.5rem; border-radius:8px; background:var(--surface); color:var(--text); border:1px solid var(--border);">Hola, ¿cómo estás?</textarea>
+  <!-- AVATAR -->
+  <div class="panel" data-panel="avatar">
+    <div class="avatar-wrap">
+      <div class="aviso-etico">Este asistente genera voz y expresión sintética. No es una persona real.</div>
+      <canvas id="avatarCanvas" class="avatar-canvas" width="280" height="280"></canvas>
+      <textarea id="avatarText">Hola, ¿cómo estás?</textarea>
       <div class="buttons">
-        <button id="btn-hablar-avatar">🗣️ Hablar</button>
-        <button id="btn-narrar-avatar">📖 Narrar</button>
-        <button id="btn-parar-avatar" style="display:none;">⏹️ Parar</button>
+        <button class="btn" id="avatarSpeak">🗣 Hablar</button>
+        <button class="btn secondary" id="avatarNarrate">📖 Narrar</button>
+        <button class="btn secondary" id="avatarStop">⏹ Parar</button>
       </div>
-      <div class="buttons emotion-btns" id="emociones-manuales">
-        <button data-emocion="positivo">😊</button>
-        <button data-emocion="negativo">😢</button>
-        <button data-emocion="neutro">😐</button>
-        <button data-emocion="sorpresa">😮</button>
-        <button data-emocion="enfado">😠</button>
-        <button data-emocion="automatico">🤖 Auto</button>
+      <div class="buttons emotion-btns" id="avatarEmotions">
+        <button data-emotion="positivo" title="Positivo">😊</button>
+        <button data-emotion="negativo" title="Negativo">😢</button>
+        <button data-emotion="neutro" title="Neutro">😐</button>
+        <button data-emotion="sorpresa" title="Sorpresa">😮</button>
+        <button data-emotion="enfado" title="Enfado">😠</button>
+        <button data-emotion="auto" title="Automático" class="active">🤖</button>
       </div>
     </div>
+  </div>
 
-    <!-- PANEL ESCUCHAR (transcriptor) -->
-    <div id="panel-escuchar" style="display:none; flex:1; flex-direction:column; align-items:center; padding:1rem; overflow-y:auto;">
-      <div class="aviso-etico" id="aviso-escuchar">Este transcriptor usa inteligencia artificial. Muestra emoción detectada en la voz.</div>
-      <div id="indicador-emocion" class="emotion-indicator emocion-neutro"></div>
-      <div id="transcripcion-en-vivo" style="font-size:1.4rem; min-height:2.5rem; margin:0.5rem 0; padding:0.5rem; background:var(--surface); border-radius:8px; width:100%; text-align:center;">Pulsa el micrófono para empezar</div>
-      <button id="btn-microfono-escuchar" style="font-size:2rem; border-radius:50%; width:70px; height:70px; background:var(--accent); color:white; border:none; cursor:pointer;">🎙️</button>
-      <select id="idioma-reconocimiento" style="margin:0.5rem; padding:0.5rem; border-radius:8px; background:var(--surface); color:var(--text); border:1px solid var(--border);">
+  <!-- TRANSCRIPTOR -->
+  <div class="panel" data-panel="escuchar">
+    <div class="transcriptor-wrap">
+      <div class="aviso-etico">Este transcriptor usa inteligencia artificial. Muestra la emoción detectada en la voz.</div>
+      <div class="emotion-indicator emocion-neutro" id="transcriptorEmotion"></div>
+      <div id="transcripcion-en-vivo">Pulsa el micrófono para empezar</div>
+      <button id="transcriptorMicBtn" class="btn" style="font-size:1.5rem;border-radius:50%;width:70px;height:70px;padding:0;">🎙</button>
+      <select id="transcriptorLang" style="padding:8px;border-radius:8px;background:var(--surface);color:var(--text);border:1px solid var(--border);">
         <option value="es-ES">Español</option>
         <option value="en-US">English</option>
         <option value="fr-FR">Français</option>
@@ -232,667 +521,2042 @@
         <option value="it-IT">Italiano</option>
         <option value="pt-PT">Português</option>
       </select>
-      <div class="historial" id="historial-escuchar"></div>
-    </div>
-
-    <!-- PANEL LOG -->
-    <div id="panel-log" style="display:none; flex:1; padding:16px; overflow-y:auto;">
-      <h3>📋 Registro de acciones</h3>
-      <button id="btn-export-log" class="btn secondary">📥 Exportar log (.txt)</button>
-      <div class="log-container" id="log-container"></div>
+      <div class="historial" id="transcriptorHistorial"></div>
     </div>
   </div>
 
-  <div class="drawer" id="config-drawer">
-    <h3>⚙️ Configuración del menú</h3>
-    <textarea id="config-json" spellcheck="false"></textarea>
-    <div class="btn-row">
-      <button id="btn-reset-config" class="btn secondary">Restablecer</button>
-      <button id="btn-apply-config" class="btn">Aplicar</button>
+  <!-- AUDIO -->
+  <div class="panel" data-panel="audio">
+    <div class="audio-wrap">
+      <div class="audio-panel">
+        <h2>🎵 Cargar muestra</h2>
+        <input type="file" id="audioFileInput" accept="audio/*" />
+        <label for="audioFileInput" class="file-label" id="audioFileLabel">📂 Seleccionar archivo de audio</label>
+
+        <h2>🌐 Atmósfera</h2>
+        <select id="audioAtmosphere">
+          <option value="tierra">🌍 Tierra</option>
+          <option value="marte">🔴 Marte</option>
+          <option value="venus">🟠 Venus</option>
+          <option value="titan">🪐 Titán</option>
+        </select>
+        <div class="atmo-data" id="audioAtmoData"></div>
+
+        <div class="gain-control">
+          <label for="audioGainBoost">🔊 Ganancia extra</label>
+          <input type="range" id="audioGainBoost" min="1" max="1000" value="1" step="1" />
+          <span id="audioGainValue">×1</span>
+        </div>
+
+        <h2 style="margin-top:12px;">🎹 Sampler (pulsa notas para capas)</h2>
+        <div class="keyboard" id="audioKeyboard"></div>
+
+        <div class="params-info" id="audioParams">Carga un audio para empezar</div>
+        <div class="status ok" id="audioStatus">Esperando audio...</div>
+
+        <h2 style="margin-top:12px;">🔴 Grabación de capas</h2>
+        <div class="recording-panel">
+          <button class="btn danger" id="audioRecBtn">⏺ Grabar</button>
+          <button class="btn secondary" id="audioStopBtn" disabled>⏹ Parar</button>
+        </div>
+        <a id="audioDownload" href="#" download="grabacion_planetaria">💾 Descargar</a>
+      </div>
+
+      <div class="audio-panel">
+        <h2>📊 Forma de onda y selección</h2>
+        <canvas id="waveCanvas" class="wave-canvas"></canvas>
+        <div class="empty" id="selectionInfo" style="text-align:center;margin-top:6px;">Arrastra las líneas para elegir inicio/fin</div>
+
+        <h2 style="margin-top:12px;">📈 Salida en tiempo real</h2>
+        <canvas id="analyserCanvas" class="analyser-canvas"></canvas>
+
+        <h2 style="margin-top:12px;">🗺 Posición (arrastra la fuente)</h2>
+        <div class="minimap" id="minimap">
+          <div class="source-dot" id="sourceDot" style="left:10%;top:50%;"></div>
+          <div class="listener-dot" id="listenerDot" style="left:50%;top:50%;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:0.8rem;color:var(--text-secondary);margin-top:6px;">
+          <span>🔴 Fuente (arrastrable)</span>
+          <span>🔵 Oyente (fijo)</span>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="overlay" id="overlay"></div>
-  <div class="context-menu" id="context-menu"></div>
+  <!-- LOG -->
+  <div class="panel" data-panel="log">
+    <div class="log-wrap">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <h3>📋 Registro de acciones</h3>
+        <button class="btn secondary" id="logExportBtn">📥 Exportar (.txt)</button>
+      </div>
+      <div class="log-container" id="logContainer"></div>
+    </div>
+  </div>
 
-  <script type="module">
-    // ============================================
-    // 🧩 EventBus
-    // ============================================
-    class EventBus {
-      #listeners = new Map();
-      on(event, callback) {
-        if (!this.#listeners.has(event)) this.#listeners.set(event, new Set());
-        this.#listeners.get(event).add(callback);
-        return () => this.#listeners.get(event)?.delete(callback);
-      }
-      emit(event, payload) { this.#listeners.get(event)?.forEach(cb => cb(payload)); }
+</div>
+
+<!-- DRAWER Y OVERLAY -->
+<div class="drawer" id="configDrawer">
+  <h3>⚙️ Configuración del menú</h3>
+  <textarea id="configJson" spellcheck="false"></textarea>
+  <div class="btn-row">
+    <button class="btn secondary" id="configReset">Restablecer</button>
+    <button class="btn" id="configApply">Aplicar</button>
+  </div>
+</div>
+<div class="overlay" id="overlay"></div>
+<div class="context-menu" id="contextMenu"></div>
+<div class="notification" id="notification"><span id="notificationMsg"></span></div>
+
+<script type="module">
+
+/* ═══════════════════════════════════════════════════════════════════════
+   NÚCLEO — servicios transversales compartidos por todos los módulos
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Bus de eventos (mediador). Única instancia global para desacoplar capas.
+ * Puerto: EventBusPort { on(event, cb), emit(event, payload) }
+ */
+class EventBus {
+  #listeners = new Map();
+  on(event, callback) {
+    if (!this.#listeners.has(event)) this.#listeners.set(event, new Set());
+    this.#listeners.get(event).add(callback);
+    return () => this.#listeners.get(event)?.delete(callback);
+  }
+  emit(event, payload) {
+    this.#listeners.get(event)?.forEach(cb => {
+      try { cb(payload); } catch (e) { console.error(`[EventBus] Error en "${event}":`, e); }
+    });
+  }
+}
+
+/** Persistencia local tipada. */
+class PersistenceService {
+  static load(key, fallback = null) {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch { return fallback; }
+  }
+  static save(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); }
+    catch (e) { console.warn('[Persistence] No se pudo guardar', key, e); }
+  }
+  static remove(key) { try { localStorage.removeItem(key); } catch {} }
+}
+
+/** Registro de acciones. Emite 'log:updated' para refrescos en vivo. */
+class LoggerService {
+  static #KEY = 'asistente.logs';
+  static #MAX = 200;
+  #logs = [];
+  #bus;
+  constructor(bus) {
+    this.#bus = bus;
+    this.#logs = PersistenceService.load(LoggerService.#KEY, []);
+  }
+  log(action, details = '') {
+    const entry = { timestamp: new Date().toISOString(), action, details };
+    this.#logs.unshift(entry);
+    if (this.#logs.length > LoggerService.#MAX) this.#logs.pop();
+    PersistenceService.save(LoggerService.#KEY, this.#logs);
+    this.#bus.emit('log:updated', this.#logs);
+  }
+  getLogs() { return [...this.#logs]; }
+  exportText() { return this.#logs.map(e => `[${e.timestamp}] ${e.action} ${e.details}`).join('\n'); }
+}
+
+/**
+ * Analizador de sentimiento compartido entre Avatar y Transcriptor.
+ * Un único servicio evita duplicidades (principio DRY).
+ */
+class SentimentAnalyzer {
+  static #LEXICON = {
+    positivo: ['feliz','contento','bien','genial','amor','gracias','alegre','excelente','maravilloso','increíble','bueno','bonito','perfecto','guay','mola'],
+    negativo: ['triste','mal','odio','miedo','feo','horrible','terrible','pésimo','tristeza','llorar','solo','sufrir','pena'],
+    sorpresa: ['wow','vaya','sorpresa','inesperado','increíble','flipando','no me lo creo','ostras','madre mía'],
+    enfado: ['furioso','rabia','estúpido','idiota','enfadado','cabreado','molesto','harto','fatal','asco']
+  };
+  static #NEGATIONS = /\b(no|sin|nunca|jamás|nada)\s+/;
+  static analyze(text) {
+    if (!text || typeof text !== 'string') return 'neutro';
+    const t = text.toLowerCase();
+    const negated = SentimentAnalyzer.#NEGATIONS.test(t);
+    const scores = { positivo: 0, negativo: 0, sorpresa: 0, enfado: 0 };
+    for (const [emotion, words] of Object.entries(SentimentAnalyzer.#LEXICON)) {
+      for (const w of words) if (t.includes(w)) scores[emotion] += 1;
     }
-
-    // ============================================
-    // 🗄️ PersistenceService
-    // ============================================
-    class PersistenceService {
-      static load(key, fallback = null) {
-        try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; } catch (e) { return fallback; }
-      }
-      static save(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {} }
+    if (negated) { const tmp = scores.positivo; scores.positivo = scores.negativo; scores.negativo = tmp; }
+    let best = 'neutro'; let bestScore = 0;
+    for (const [e, s] of Object.entries(scores)) {
+      if (s > bestScore) { best = e; bestScore = s; }
     }
+    return best;
+  }
+}
 
-    // ============================================
-    // 📁 FileSystemService
-    // ============================================
-    class FileSystemService {
-      #root = null;
-      get root() { return this.#root; }
-      async selectDirectory() {
-        try { this.#root = await window.showDirectoryPicker(); return this.#root; } catch (e) { if (e.name !== 'AbortError') throw e; return null; }
-      }
-      async scanTree(handle = this.#root, path = '', depth = 0) {
-        if (!handle || depth > 3) return [];
-        const items = [];
-        for await (const [name, h] of handle) {
-          const fullPath = path ? `${path}/${name}` : name;
-          const node = { name, fullPath, kind: h.kind, handle: h, children: h.kind === 'directory' ? await this.scanTree(h, fullPath, depth + 1) : [] };
-          items.push(node);
+/* ═══════════════════════════════════════════════════════════════════════
+   DOMINIO PURO — sin dependencias externas
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Dominio del Motor de Filtrado Genérico.
+ * Reutilizado por: Laboratorio (análisis de código) y Juego de Texto (detección de tags).
+ */
+const FilterDomain = (() => {
+  const SEVERITY_ORDER = ['critical','high','medium','low','info'];
+
+  function validateRule(rule) {
+    const errors = [];
+    if (!rule.id || typeof rule.id !== 'string') errors.push('Falta "id" (string)');
+    if (!rule.pattern || typeof rule.pattern !== 'string') errors.push('Falta "pattern" (string)');
+    if (!rule.category || typeof rule.category !== 'string') errors.push('Falta "category" (string)');
+    if (!rule.severity || !SEVERITY_ORDER.includes(rule.severity)) errors.push(`"severity" debe ser uno de: ${SEVERITY_ORDER.join(', ')}`);
+    if (!rule.action || typeof rule.action !== 'string') errors.push('Falta "action" (string)');
+    if (!rule.message || typeof rule.message !== 'string') errors.push('Falta "message" (string)');
+    if (rule.override && !Array.isArray(rule.override)) errors.push('"override" debe ser un array');
+    return { valid: errors.length === 0, errors };
+  }
+
+  function validateSchema(json) {
+    const errors = [];
+    if (!json || typeof json !== 'object') { errors.push('El JSON debe ser un objeto'); return { valid: false, errors }; }
+    if (!json.name || typeof json.name !== 'string') errors.push('Falta "name" (string)');
+    if (!json.rules || !Array.isArray(json.rules)) { errors.push('Falta "rules" (array)'); return { valid: false, errors }; }
+    json.rules.forEach((rule, idx) => {
+      const r = validateRule(rule);
+      r.errors.forEach(err => errors.push(`Regla #${idx + 1} (${rule.id || 'sin id'}): ${err}`));
+    });
+    if (json.defaultAction !== undefined && typeof json.defaultAction !== 'string') errors.push('"defaultAction" debe ser string');
+    if (json.summarizer && typeof json.summarizer !== 'object') errors.push('"summarizer" debe ser objeto');
+    return { valid: errors.length === 0, errors };
+  }
+
+  function filter(input, rules, config = {}) {
+    const defaultAction = config.defaultAction || 'PERMITIR';
+    const summarizer = config.summarizer || { maxLines: 5 };
+    const text = String(input ?? '');
+    const matches = [];
+    const actionsSet = new Set();
+    let maxSeverity = 'info';
+
+    for (const rule of rules) {
+      try {
+        const regex = new RegExp(rule.pattern, 'gi');
+        const found = text.match(regex);
+        if (found && found.length > 0) {
+          const idx = text.search(regex);
+          const ctxStart = Math.max(0, idx - 60);
+          const ctxEnd = Math.min(text.length, idx + (found[0]?.length || 0) + 60);
+          matches.push({ rule, matchedText: found, context: text.substring(ctxStart, ctxEnd).trim() });
+          actionsSet.add(rule.action);
+          const sevIdx = SEVERITY_ORDER.indexOf(rule.severity);
+          const maxIdx = SEVERITY_ORDER.indexOf(maxSeverity);
+          if (sevIdx >= 0 && sevIdx < maxIdx) maxSeverity = rule.severity;
         }
-        return items.sort((a, b) => { if (a.kind !== b.kind) return a.kind === 'directory' ? -1 : 1; return a.name.localeCompare(b.name); });
+      } catch (e) { console.warn(`[FilterDomain] Regex inválida en regla ${rule.id}:`, e.message); }
+    }
+
+    const finalMatches = matches.filter(m => {
+      if (!m.rule.override?.length) return true;
+      return !matches.some(o => o.rule.id !== m.rule.id && m.rule.override.includes(o.rule.category));
+    });
+
+    let globalAction = defaultAction;
+    if (actionsSet.has('BLOQUEAR')) globalAction = 'BLOQUEAR';
+    else if (actionsSet.has('REQUIERE_ESPERA')) globalAction = 'REQUIERE_ESPERA';
+    else if (actionsSet.has('EXTRACT')) globalAction = 'EXTRACT';
+
+    const summaryLines = [];
+    if (finalMatches.length === 0) summaryLines.push('✅ No se detectaron problemas.');
+    else {
+      const critical = finalMatches.filter(m => ['critical','high'].includes(m.rule.severity));
+      const top = critical.length ? critical : finalMatches.slice(0, 2);
+      top.forEach(m => summaryLines.push(`⚠️ ${m.rule.message} (${m.rule.action})`));
+    }
+
+    const categories = [...new Set(finalMatches.map(m => m.rule.category))];
+
+    return {
+      matches: finalMatches,
+      globalAction,
+      summary: summaryLines.slice(0, summarizer.maxLines || 5).join('\n'),
+      metadata: { totalMatches: finalMatches.length, maxSeverity, categories }
+    };
+  }
+
+  return { validateRule, validateSchema, filter, SEVERITY_ORDER };
+})();
+
+/** Registro de tags (para el juego de texto). */
+class TagRegistry {
+  #tags = new Map();
+  register(id, meta = {}) {
+    this.#tags.set(id, { id, name: meta.name || id, color: meta.color || '#888', effects: meta.effects || {} });
+    return this;
+  }
+  get(id) { return this.#tags.get(id); }
+  all() { return [...this.#tags.values()]; }
+}
+
+/** Generador aleatorio ponderado por tags coincidentes. */
+class Generator {
+  constructor(rng = Math.random) { this.rng = rng; }
+  #pick(items) {
+    const total = items.reduce((s, i) => s + (i._w || 1), 0);
+    let r = this.rng() * total;
+    for (const item of items) { r -= (item._w || 1); if (r <= 0) return item; }
+    return items[items.length - 1];
+  }
+  generate(tags, catalog, count = 3) {
+    if (!catalog.length) return [];
+    const weighted = catalog.map(e => ({
+      ...e,
+      _w: (e.weight || 1) * (1 + (e.tags || []).filter(t => tags.includes(t)).length * 2)
+    }));
+    const result = [];
+    for (let i = 0; i < count; i++) {
+      const picked = this.#pick(weighted);
+      result.push({
+        id: `${picked.id}_${i}`, baseId: picked.id, name: picked.name,
+        tags: picked.tags || [], rarity: picked.rarity || 'common',
+        cost: picked.cost || 1, effects: { ...(picked.effects || {}) }
+      });
+    }
+    return result;
+  }
+}
+
+/** Detector de sinergias y combos. */
+class SynergyEngine {
+  constructor(synergies = [], combos = []) { this.synergies = synergies; this.combos = combos; }
+  detect(entities) {
+    const tagSet = new Set(entities.flatMap(e => e.tags));
+    const tagCounts = {};
+    for (const e of entities) for (const t of e.tags) tagCounts[t] = (tagCounts[t] || 0) + 1;
+    const activeSyn = this.synergies.filter(s => s.requiredTags.every(t => tagSet.has(t)));
+    const activeCombos = this.combos.filter(c =>
+      Object.entries(c.requiredTags).every(([t, n]) => (tagCounts[t] || 0) >= n)
+    );
+    return { synergies: activeSyn, combos: activeCombos };
+  }
+}
+
+/** Resolutor de efectos finales. */
+class Resolver {
+  apply(entities, synResult) {
+    const effects = {};
+    const add = (obj) => {
+      for (const [k, v] of Object.entries(obj || {})) effects[k] = (effects[k] || 0) + v;
+    };
+    for (const e of entities) add(e.effects);
+    for (const s of synResult.synergies) add(s.effects);
+    for (const c of synResult.combos) add(c.effects);
+    return effects;
+  }
+}
+
+/** Atmósfera planetaria (dominio de audio). */
+class Atmosphere {
+  constructor(id, config) {
+    this.id = id;
+    this.name = config.name;
+    this.pressure = config.pressure;
+    this.temperature = config.temperature;
+    this.molarMass = config.molarMass;
+    this.gamma = config.gamma;
+    this.absorptionCoeffs = config.absorptionCoeffs || {};
+  }
+  get soundSpeed() {
+    const R = 8.314;
+    return Math.sqrt((this.gamma * R * this.temperature) / this.molarMass);
+  }
+  get density() {
+    const R = 0.082;
+    return (this.pressure * this.molarMass) / (R * this.temperature);
+  }
+  getAbsorption(frequency) {
+    const freqs = Object.keys(this.absorptionCoeffs).map(Number).sort((a, b) => a - b);
+    if (!freqs.length) return 0.001;
+    if (frequency <= freqs[0]) return this.absorptionCoeffs[freqs[0]];
+    if (frequency >= freqs[freqs.length - 1]) return this.absorptionCoeffs[freqs[freqs.length - 1]];
+    for (let i = 0; i < freqs.length - 1; i++) {
+      if (freqs[i] <= frequency && frequency <= freqs[i + 1]) {
+        const t = (frequency - freqs[i]) / (freqs[i + 1] - freqs[i]);
+        return this.absorptionCoeffs[freqs[i]] * (1 - t) + this.absorptionCoeffs[freqs[i + 1]] * t;
       }
-      async move(handle, destFolderName) {
-        const file = await handle.getFile();
-        const destDir = await this.#root.getDirectoryHandle(destFolderName, { create: true });
-        const newHandle = await destDir.getFileHandle(handle.name, { create: true });
-        const writable = await newHandle.createWritable(); await writable.write(file); await writable.close();
-        await handle.remove(); return newHandle;
+    }
+    return 0.001;
+  }
+}
+
+/** Propagador de sonido (dominio de audio). */
+class SoundPropagator {
+  constructor() { this.atmosphere = null; }
+  setAtmosphere(a) { this.atmosphere = a; }
+  process(noteFreq, baseFreq, sourcePos, listenerPos) {
+    if (!this.atmosphere) return null;
+    const dx = listenerPos.x - sourcePos.x;
+    const dy = listenerPos.y - sourcePos.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const speed = this.atmosphere.soundSpeed;
+    const density = this.atmosphere.density;
+    const pitchRatio = noteFreq / baseFreq;
+    const distanceAttenuation = 1 / (1 + dist);
+    const densityFactor = density / 1.225;
+    const volumeFactor = distanceAttenuation * Math.min(densityFactor, 2.0) * 0.8;
+    const absorption = this.atmosphere.getAbsorption(noteFreq);
+    const cutoffFrequency = Math.max(200, noteFreq * Math.exp(-absorption * dist));
+    return {
+      pitchMultiplier: pitchRatio,
+      volumeFactor: Math.min(volumeFactor, 1.5),
+      cutoffFrequency,
+      delay: dist / speed,
+      distance: dist
+    };
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   INFRAESTRUCTURA — adaptadores concretos
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/** Acceso al sistema de ficheros (File System Access API). */
+class FileSystemService {
+  #root = null;
+  get root() { return this.#root; }
+  async selectDirectory() {
+    try { this.#root = await window.showDirectoryPicker(); return this.#root; }
+    catch (e) { if (e.name !== 'AbortError') throw e; return null; }
+  }
+  async scanTree(handle = this.#root, path = '', depth = 0) {
+    if (!handle || depth > 4) return [];
+    const items = [];
+    for await (const [name, h] of handle) {
+      const fullPath = path ? `${path}/${name}` : name;
+      items.push({
+        name, fullPath, kind: h.kind, handle: h,
+        children: h.kind === 'directory' ? await this.scanTree(h, fullPath, depth + 1) : []
+      });
+    }
+    return items.sort((a, b) => {
+      if (a.kind !== b.kind) return a.kind === 'directory' ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+  }
+  async move(handle, destFolderName) {
+    const file = await handle.getFile();
+    const destDir = await this.#root.getDirectoryHandle(destFolderName, { create: true });
+    const newHandle = await destDir.getFileHandle(handle.name, { create: true });
+    const w = await newHandle.createWritable();
+    await w.write(file); await w.close();
+    await handle.remove();
+    return newHandle;
+  }
+  async copy(handle, destFolderName) {
+    const file = await handle.getFile();
+    const destDir = await this.#root.getDirectoryHandle(destFolderName, { create: true });
+    const newHandle = await destDir.getFileHandle(handle.name, { create: true });
+    const w = await newHandle.createWritable();
+    await w.write(file); await w.close();
+    return newHandle;
+  }
+  async rename(handle, newName) {
+    const file = await handle.getFile();
+    const parent = await this.#getParentHandle(handle);
+    const newHandle = await parent.getFileHandle(newName, { create: true });
+    const w = await newHandle.createWritable();
+    await w.write(file); await w.close();
+    await handle.remove();
+    return newHandle;
+  }
+  async changeExtension(handle, newExt) {
+    const old = handle.name;
+    const base = old.includes('.') ? old.substring(0, old.lastIndexOf('.')) : old;
+    return this.rename(handle, `${base}.${newExt}`);
+  }
+  async delete(handle) { await handle.remove(); }
+  async writeTo(handle, content) {
+    const w = await handle.createWritable();
+    await w.write(content); await w.close();
+  }
+  async #getParentHandle(handle) {
+    const find = async (dir, target) => {
+      for await (const [name, h] of dir) {
+        if (h.kind === 'file' && name === target) return dir;
+        if (h.kind === 'directory') {
+          const found = await find(h, target);
+          if (found) return found;
+        }
       }
-      async copy(handle, destFolderName) {
-        const file = await handle.getFile();
-        const destDir = await this.#root.getDirectoryHandle(destFolderName, { create: true });
-        const newHandle = await destDir.getFileHandle(handle.name, { create: true });
-        const writable = await newHandle.createWritable(); await writable.write(file); await writable.close();
-        return newHandle;
+      return null;
+    };
+    return (await find(this.#root, handle.name)) || this.#root;
+  }
+}
+
+/** Parser de comandos en lenguaje natural sencillo. */
+class CommandParser {
+  static parse(input) {
+    const t = input.trim();
+    const m = t.match(/^(mover|mov|m|copiar|copy)\s+(.+?)\s+a\s+(.+)$/i);
+    if (m) return { action: m[1].toLowerCase().startsWith('cop') ? 'copy' : 'move', params: { pattern: m[2], dest: m[3] } };
+    const r = t.match(/^(renombrar|ren)\s+(.+?)\s+a\s+(.+)$/i);
+    if (r) return { action: 'rename', params: { from: r[2], to: r[3] } };
+    const e = t.match(/^(cambiar\s+extension|ext)\s+(\w+)\s+a\s+(\w+)/i);
+    if (e) return { action: 'changeExt', params: { fromExt: e[2], toExt: e[3] } };
+    const d = t.match(/^(eliminar|borrar|del)\s+(.+)/i);
+    if (d) return { action: 'delete', params: { pattern: d[2] } };
+    return null;
+  }
+  static filterFiles(nodes, pattern) {
+    const res = [];
+    const walk = (list) => {
+      for (const n of list) {
+        if (n.kind === 'file' && CommandParser.matchPattern(n.name, pattern)) res.push(n);
+        if (n.children) walk(n.children);
       }
-      async rename(handle, newName) {
-        const file = await handle.getFile();
-        const parent = await this.#getParentHandle(handle);
-        const newHandle = await parent.getFileHandle(newName, { create: true });
-        const writable = await newHandle.createWritable(); await writable.write(file); await writable.close();
-        await handle.remove(); return newHandle;
+    };
+    walk(nodes);
+    return res;
+  }
+  static matchPattern(name, pattern) {
+    const regex = pattern
+      .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+      .replace(/\*/g, '.*')
+      .replace(/\?/g, '.');
+    return new RegExp(`^${regex}$`, 'i').test(name);
+  }
+}
+
+/** Cálculo geométrico de posiciones del menú radial. */
+class GeometryEngine {
+  static calculate(type, count, btnSize, center) {
+    switch (type) {
+      case 'anillo': return this.#ring(count, btnSize);
+      case 'espiral': return this.#spiral(count, btnSize);
+      case 'columna': return this.#column(count, btnSize, center);
+      default: return this.#fan(count, btnSize, center);
+    }
+  }
+  static #ring(n, s) {
+    const r = s * 1.6; const pos = [];
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 - Math.PI / 2;
+      pos.push({ x: Math.cos(a) * r, y: Math.sin(a) * r });
+    }
+    return pos;
+  }
+  static #fan(n, s, c) {
+    const r = s * 1.8;
+    const vw = window.innerWidth, vh = window.innerHeight, margin = r + s;
+    let sa = -Math.PI * 0.75, ea = Math.PI * 0.25;
+    if (c.x > vw - margin) { sa = Math.PI * 0.25; ea = Math.PI * 1.25; }
+    if (c.y > vh - margin) { sa = -Math.PI * 1.25; ea = -Math.PI * 0.25; }
+    if (c.x > vw - margin && c.y > vh - margin) { sa = Math.PI * 0.75; ea = Math.PI * 1.75; }
+    if (c.x < margin && c.y > vh - margin) { sa = -Math.PI * 0.75; ea = Math.PI * 0.25; }
+    const pos = [];
+    for (let i = 0; i < n; i++) {
+      const a = sa + (i / (n - 1 || 1)) * (ea - sa);
+      pos.push({ x: Math.cos(a) * r, y: Math.sin(a) * r });
+    }
+    return pos;
+  }
+  static #spiral(n, s) {
+    const ga = 2.399963, br = s * 0.9, rs = s * 0.35; const pos = [];
+    for (let i = 0; i < n; i++) {
+      const a = i * ga, r = br + i * rs;
+      pos.push({ x: Math.cos(a) * r, y: Math.sin(a) * r });
+    }
+    return pos;
+  }
+  static #column(n, s, c) {
+    const sp = s * 1.3, vw = window.innerWidth, margin = s * 2;
+    let dx = 1;
+    if (c.x > vw - margin) dx = -1;
+    const pos = [];
+    for (let i = 0; i < n; i++) pos.push({ x: dx * sp, y: (i - (n - 1) / 2) * sp });
+    return pos;
+  }
+}
+
+/** Motor de audio Web Audio API. */
+class WebAudioEngine {
+  constructor() {
+    this.audioCtx = null;
+    this.analyser = null;
+    this.mediaStreamDest = null;
+    this.fullBuffer = null;
+    this.initialized = false;
+  }
+  init() {
+    if (this.initialized) return;
+    try {
+      this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      this.analyser = this.audioCtx.createAnalyser();
+      this.analyser.fftSize = 256;
+      this.analyser.connect(this.audioCtx.destination);
+      this.mediaStreamDest = this.audioCtx.createMediaStreamDestination();
+      this.analyser.connect(this.mediaStreamDest);
+      this.initialized = true;
+    } catch (e) {
+      console.error('[WebAudio] No soportado', e);
+      throw new Error('Web Audio no disponible');
+    }
+  }
+  async loadSample(arrayBuffer) {
+    if (!this.initialized) this.init();
+    this.fullBuffer = await this.audioCtx.decodeAudioData(arrayBuffer);
+    return this.fullBuffer;
+  }
+  getAnalyserNode() { return this.analyser; }
+  getMediaStream() { return this.mediaStreamDest.stream; }
+  createSlice(startSec, endSec, fadeMs = 5) {
+    if (!this.fullBuffer) return null;
+    const sr = this.fullBuffer.sampleRate;
+    const startSample = Math.floor(startSec * sr);
+    const endSample = Math.floor(endSec * sr);
+    const len = endSample - startSample;
+    if (len <= 0) return null;
+    const ch = this.fullBuffer.numberOfChannels;
+    const slice = this.audioCtx.createBuffer(ch, len, sr);
+    const fadeSamples = Math.min(Math.floor(fadeMs / 1000 * sr), Math.floor(len / 2));
+    for (let c = 0; c < ch; c++) {
+      const orig = this.fullBuffer.getChannelData(c);
+      const dst = slice.getChannelData(c);
+      for (let i = 0; i < len; i++) dst[i] = orig[startSample + i];
+      for (let i = 0; i < fadeSamples; i++) dst[i] *= i / fadeSamples;
+      for (let i = len - fadeSamples; i < len; i++) dst[i] *= (len - 1 - i) / fadeSamples;
+    }
+    return slice;
+  }
+  playSlice(buffer, params) {
+    if (!buffer || !this.initialized) return;
+    const now = this.audioCtx.currentTime;
+    const src = this.audioCtx.createBufferSource();
+    src.buffer = buffer;
+    src.playbackRate.setValueAtTime(params.pitchMultiplier, now);
+    const filter = this.audioCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(params.cutoffFrequency, now);
+    filter.Q.setValueAtTime(0.8, now);
+    const gain = this.audioCtx.createGain();
+    const vol = params.volumeFactor;
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(vol, now + 0.02);
+    const dur = buffer.duration / params.pitchMultiplier;
+    gain.gain.exponentialRampToValueAtTime(Math.max(vol * 0.3, 0.00001), now + dur * 0.7);
+    gain.gain.linearRampToValueAtTime(0, now + dur + 0.1);
+    src.connect(filter); filter.connect(gain); gain.connect(this.analyser);
+    const startTime = now + (params.delay || 0);
+    src.start(startTime);
+    src.stop(startTime + dur + 0.1);
+  }
+}
+
+/** Adaptador de grabación con MediaRecorder. */
+class MediaRecorderAdapter {
+  constructor(stream) {
+    this.stream = stream;
+    this.mediaRecorder = null;
+    this.chunks = [];
+    this.mimeType = '';
+  }
+  static getSupportedMimeType() {
+    const types = ['audio/webm', 'audio/ogg', 'audio/mp4', 'audio/wav'];
+    for (const t of types) if (MediaRecorder.isTypeSupported(t)) return t;
+    return '';
+  }
+  start() {
+    this.chunks = [];
+    this.mimeType = MediaRecorderAdapter.getSupportedMimeType();
+    const opts = this.mimeType ? { mimeType: this.mimeType } : {};
+    try { this.mediaRecorder = new MediaRecorder(this.stream, opts); }
+    catch (e) { throw new Error('Grabación no soportada'); }
+    this.mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) this.chunks.push(e.data); };
+    this.mediaRecorder.start();
+  }
+  stop() {
+    return new Promise((resolve) => {
+      if (!this.mediaRecorder || this.mediaRecorder.state === 'inactive') { resolve(null); return; }
+      this.mediaRecorder.onstop = () => {
+        const blob = new Blob(this.chunks, { type: this.mimeType || 'audio/webm' });
+        resolve(blob);
+      };
+      this.mediaRecorder.stop();
+    });
+  }
+}
+
+/** Renderizador de forma de onda con selección arrastrable. */
+class CanvasWaveformRenderer {
+  constructor(canvas) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.buffer = null;
+    this.startTime = 0;
+    this.endTime = 0.5;
+    this.dragMode = null;
+    this.onSelectionChange = null;
+    this.#setupEvents();
+  }
+  setBuffer(buffer) {
+    this.buffer = buffer;
+    this.startTime = 0;
+    this.endTime = Math.min(0.5, buffer ? buffer.duration : 0.5);
+    this.draw();
+  }
+  getSelection() { return { start: this.startTime, end: this.endTime }; }
+  draw() {
+    const { canvas, ctx, buffer, startTime, endTime } = this;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (!buffer) return;
+    const data = buffer.getChannelData(0);
+    const step = Math.ceil(data.length / canvas.width);
+    ctx.beginPath();
+    ctx.strokeStyle = '#4488ff';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < canvas.width; i++) {
+      let min = 1, max = -1;
+      for (let j = 0; j < step; j++) {
+        const idx = i * step + j;
+        if (idx < data.length) {
+          const v = data[idx];
+          if (v < min) min = v;
+          if (v > max) max = v;
+        }
       }
-      async changeExtension(handle, newExt) {
-        const old = handle.name; const base = old.substring(0, old.lastIndexOf('.')) || old;
-        return this.rename(handle, `${base}.${newExt}`);
-      }
-      async delete(handle) { await handle.remove(); }
-      async #getParentHandle(handle) {
-        const find = async (dir, target) => {
-          for await (const [name, h] of dir) {
-            if (h.kind === 'file' && name === target) return dir;
-            if (h.kind === 'directory') { const found = await find(h, target); if (found) return found; }
+      ctx.moveTo(i, ((min + 1) / 2) * canvas.height);
+      ctx.lineTo(i, ((max + 1) / 2) * canvas.height);
+    }
+    ctx.stroke();
+    const dur = buffer.duration;
+    const sx = (startTime / dur) * canvas.width;
+    const ex = (endTime / dur) * canvas.width;
+    ctx.beginPath(); ctx.strokeStyle = '#00ff88'; ctx.lineWidth = 2;
+    ctx.moveTo(sx, 0); ctx.lineTo(sx, canvas.height); ctx.stroke();
+    ctx.beginPath(); ctx.strokeStyle = '#ff4444'; ctx.lineWidth = 2;
+    ctx.moveTo(ex, 0); ctx.lineTo(ex, canvas.height); ctx.stroke();
+  }
+  #xToTime(canvasX) {
+    if (!this.buffer) return 0;
+    const rect = this.canvas.getBoundingClientRect();
+    const scaleX = this.canvas.width / rect.width;
+    return ((canvasX * scaleX) / this.canvas.width) * this.buffer.duration;
+  }
+  #setupEvents() {
+    const getX = (e) => e.touches ? e.touches[0].clientX : e.clientX;
+    const onDown = (e) => {
+      if (!this.buffer) return;
+      const rect = this.canvas.getBoundingClientRect();
+      const x = getX(e) - rect.left;
+      const sx = (this.startTime / this.buffer.duration) * this.canvas.width;
+      const ex = (this.endTime / this.buffer.duration) * this.canvas.width;
+      if (Math.abs(x - sx) < 10) this.dragMode = 'start';
+      else if (Math.abs(x - ex) < 10) this.dragMode = 'end';
+      e.preventDefault();
+    };
+    const onMove = (e) => {
+      if (!this.dragMode || !this.buffer) return;
+      const rect = this.canvas.getBoundingClientRect();
+      const t = this.#xToTime(getX(e) - rect.left);
+      if (this.dragMode === 'start') this.startTime = Math.min(t, this.endTime - 0.01);
+      else this.endTime = Math.max(t, this.startTime + 0.01);
+      this.draw();
+      this.onSelectionChange?.(this.startTime, this.endTime);
+      e.preventDefault();
+    };
+    const onUp = () => { this.dragMode = null; };
+    this.canvas.addEventListener('mousedown', onDown);
+    this.canvas.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    this.canvas.addEventListener('touchstart', onDown, { passive: false });
+    this.canvas.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onUp);
+  }
+}
+
+/** Visualizador del analizador (osciloscopio). */
+class AnalyserVisualizer {
+  constructor(canvas, analyserNode) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.analyser = analyserNode;
+    this.rafId = null;
+    this.#loop();
+  }
+  #loop = () => {
+    this.rafId = requestAnimationFrame(this.#loop);
+    if (!this.analyser) return;
+    const len = this.analyser.frequencyBinCount;
+    const data = new Uint8Array(len);
+    this.analyser.getByteTimeDomainData(data);
+    const { width, height } = this.canvas;
+    this.ctx.fillStyle = '#0a0a18';
+    this.ctx.fillRect(0, 0, width, height);
+    this.ctx.lineWidth = 2;
+    this.ctx.strokeStyle = '#44aaff';
+    this.ctx.beginPath();
+    const sliceW = width / len;
+    let x = 0;
+    for (let i = 0; i < len; i++) {
+      const v = data[i] / 128;
+      const y = v * height / 2;
+      if (i === 0) this.ctx.moveTo(x, y);
+      else this.ctx.lineTo(x, y);
+      x += sliceW;
+    }
+    this.ctx.lineTo(width, height / 2);
+    this.ctx.stroke();
+  };
+  stop() { if (this.rafId) cancelAnimationFrame(this.rafId); }
+}
+
+/** Controlador del minimapa con drag de fuente. */
+class MinimapController {
+  constructor(element, sourceDot) {
+    this.element = element;
+    this.sourceDot = sourceDot;
+    this.dragging = false;
+    this.sourceX = 0.1;
+    this.sourceY = 0.5;
+    this.#setupDrag();
+  }
+  getSourcePosition() { return { x: this.sourceX * 10, y: this.sourceY * 10 }; }
+  getListenerPosition() { return { x: 5, y: 5 }; }
+  #updateDot() {
+    this.sourceDot.style.left = (this.sourceX * 100) + '%';
+    this.sourceDot.style.top = (this.sourceY * 100) + '%';
+  }
+  #setupDrag() {
+    const getPos = (e) => {
+      const rect = this.element.getBoundingClientRect();
+      const cx = e.touches ? e.touches[0].clientX : e.clientX;
+      const cy = e.touches ? e.touches[0].clientY : e.clientY;
+      return { x: (cx - rect.left) / rect.width, y: (cy - rect.top) / rect.height };
+    };
+    const onStart = (e) => { if (e.target === this.sourceDot) { this.dragging = true; e.preventDefault(); } };
+    const onMove = (e) => {
+      if (!this.dragging) return;
+      const pos = getPos(e);
+      this.sourceX = Math.min(1, Math.max(0, pos.x));
+      this.sourceY = Math.min(1, Math.max(0, pos.y));
+      this.#updateDot();
+      e.preventDefault();
+    };
+    const onStop = () => { this.dragging = false; };
+    this.element.addEventListener('mousedown', onStart);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onStop);
+    this.element.addEventListener('touchstart', onStart, { passive: false });
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onStop);
+  }
+}
+
+/** Repositorio de atmósferas. */
+class AtmosphereRepository {
+  #atmospheres = {};
+  register(id, config) { this.#atmospheres[id] = new Atmosphere(id, config); }
+  get(id) { return this.#atmospheres[id] || this.#atmospheres['tierra']; }
+  initDefaults() {
+    this.register('tierra', { name: 'Tierra', pressure: 1.0, temperature: 293, molarMass: 0.029, gamma: 1.4, absorptionCoeffs: { 100: 0.001, 1000: 0.003, 10000: 0.01 } });
+    this.register('marte', { name: 'Marte', pressure: 0.006, temperature: 210, molarMass: 0.044, gamma: 1.3, absorptionCoeffs: { 100: 0.01, 1000: 0.1, 10000: 0.5 } });
+    this.register('venus', { name: 'Venus', pressure: 92, temperature: 737, molarMass: 0.044, gamma: 1.3, absorptionCoeffs: { 100: 0.0001, 1000: 0.001, 10000: 0.05 } });
+    this.register('titan', { name: 'Titán', pressure: 1.45, temperature: 94, molarMass: 0.028, gamma: 1.4, absorptionCoeffs: { 100: 0.0005, 1000: 0.002, 10000: 0.008 } });
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   UI — componentes desacoplados por eventos
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/** Notificaciones tipo toast. */
+class Notifications {
+  #el; #msg; #timer;
+  constructor() {
+    this.#el = document.getElementById('notification');
+    this.#msg = document.getElementById('notificationMsg');
+  }
+  show(text, type = 'info') {
+    if (this.#timer) clearTimeout(this.#timer);
+    this.#msg.textContent = text;
+    this.#el.className = 'notification show ' + (type || '');
+    this.#timer = setTimeout(() => this.#el.classList.remove('show'), 4000);
+  }
+}
+
+/** Menú contextual radial. */
+class ContextMenuUI {
+  #container = document.getElementById('contextMenu');
+  #bus; #actions = []; #visible = false; #size = 48; #geometry = 'abanico'; #target = null;
+  constructor(bus) {
+    this.#bus = bus;
+    bus.on('context:show', ({ x, y, node, fsHandle }) => this.show(x, y, node, fsHandle));
+    document.addEventListener('click', () => this.hide());
+    this.#container.addEventListener('click', (e) => e.stopPropagation());
+  }
+  updateConfig(c) {
+    this.#actions = c.actions || [];
+    this.#size = c.buttonSize || 48;
+    this.#geometry = c.geometria || 'abanico';
+    document.getElementById('geometryBadge').textContent = this.#geometry;
+  }
+  show(x, y, node, fsHandle) {
+    const scale = Math.min(1.5, Math.max(0.5, Math.min(window.innerWidth, window.innerHeight) / 800));
+    const btnSize = this.#size * scale;
+    const positions = GeometryEngine.calculate(this.#geometry, this.#actions.length, btnSize, { x, y });
+    let maxDist = 0;
+    positions.forEach(p => { const d = Math.hypot(p.x, p.y) + btnSize / 2; if (d > maxDist) maxDist = d; });
+    const pad = 10;
+    const adj = {
+      x: Math.min(window.innerWidth - maxDist - pad, Math.max(maxDist + pad, x)),
+      y: Math.min(window.innerHeight - maxDist - pad, Math.max(maxDist + pad, y))
+    };
+    this.#target = { x: adj.x, y: adj.y, node, fsHandle };
+    this.#container.style.left = adj.x + 'px';
+    this.#container.style.top = adj.y + 'px';
+    this.#render(btnSize, positions);
+    this.#container.classList.add('active');
+    this.#visible = true;
+    this.#animate(true);
+  }
+  #render(btnSize, positions) {
+    this.#container.innerHTML = '';
+    this.#actions.forEach((act, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'context-btn';
+      btn.title = act.label;
+      btn.textContent = act.icon;
+      btn.style.width = btnSize + 'px';
+      btn.style.height = btnSize + 'px';
+      btn.style.fontSize = (btnSize * 0.55) + 'px';
+      btn.style.setProperty('--x', positions[i].x + 'px');
+      btn.style.setProperty('--y', positions[i].y + 'px');
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        this.#bus.emit('context:action', { action: act.id, target: this.#target });
+        this.hide();
+      };
+      this.#container.appendChild(btn);
+    });
+  }
+  #animate(show) {
+    const btns = this.#container.querySelectorAll('.context-btn');
+    btns.forEach((b, i) => setTimeout(() => {
+      b.style.transform = show ? 'translate(var(--x), var(--y)) scale(1)' : 'translate(-50%, -50%) scale(0)';
+      b.classList.toggle('visible', show);
+    }, i * 40));
+  }
+  hide() {
+    if (!this.#visible) return;
+    this.#animate(false);
+    this.#container.classList.remove('active');
+    this.#visible = false;
+    this.#target = null;
+  }
+}
+
+/** Árbol de ficheros. */
+class TreeViewUI {
+  #container = document.getElementById('treeContainer');
+  #bus; #mode = 'menuDirecto';
+  constructor(bus) {
+    this.#bus = bus;
+    bus.on('config:updated', c => { this.#mode = c.modoInteraccion || 'menuDirecto'; });
+  }
+  render(nodes) {
+    this.#container.innerHTML = '';
+    if (!nodes?.length) {
+      this.#container.innerHTML = '<div class="empty" style="padding:8px;">Vacío</div>';
+      return;
+    }
+    this.#renderNodes(nodes, this.#container, '');
+  }
+  #renderNodes(nodes, parent, basePath) {
+    for (const node of nodes) {
+      const fullPath = basePath ? `${basePath}/${node.name}` : node.name;
+      const div = document.createElement('div');
+      div.className = 'tree-item';
+      div.innerHTML = `<span class="icon">${node.kind === 'directory' ? '📁' : '📄'}</span><span class="name">${node.name}</span>`;
+      const center = () => { const r = div.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; };
+      div.onclick = (e) => {
+        e.stopPropagation();
+        if (node.kind === 'directory') {
+          const cd = div.nextElementSibling;
+          if (cd?.classList.contains('tree-children')) cd.hidden = !cd.hidden;
+        }
+        document.querySelectorAll('.tree-item.selected').forEach(el => el.classList.remove('selected'));
+        div.classList.add('selected');
+        this.#bus.emit('tree:select', { path: fullPath, node });
+        if (node.kind === 'file' && this.#mode === 'menuDirecto') {
+          const c = center();
+          this.#bus.emit('context:show', { ...c, node, fsHandle: node.handle });
+        }
+      };
+      div.ondblclick = () => {
+        if (node.kind === 'file' && this.#mode === 'seleccionYMenu') {
+          const c = center();
+          this.#bus.emit('context:show', { ...c, node, fsHandle: node.handle });
+        }
+      };
+      div.oncontextmenu = (e) => {
+        e.preventDefault();
+        if (node.kind === 'file') {
+          const c = center();
+          this.#bus.emit('context:show', { ...c, node, fsHandle: node.handle });
+        }
+      };
+      let timer;
+      div.ontouchstart = () => {
+        timer = setTimeout(() => {
+          if (node.kind === 'file') {
+            const c = center();
+            this.#bus.emit('context:show', { ...c, node, fsHandle: node.handle });
           }
-          return null;
-        };
-        return find(this.#root, handle.name) || this.#root;
+        }, 500);
+      };
+      div.ontouchend = () => clearTimeout(timer);
+      div.ontouchmove = () => clearTimeout(timer);
+      parent.appendChild(div);
+      if (node.children?.length) {
+        const cd = document.createElement('div');
+        cd.className = 'tree-children';
+        cd.hidden = true;
+        this.#renderNodes(node.children, cd, fullPath);
+        parent.appendChild(cd);
       }
     }
+  }
+}
 
-    // ============================================
-    // 🧠 CommandParser
-    // ============================================
-    class CommandParser {
-      static parse(input) {
-        const t = input.trim();
-        const m = t.match(/^(mover|mov|m|copiar|copy)\s+(.+?)\s+a\s+(.+)$/i);
-        if (m) return { action: m[1].toLowerCase().startsWith('cop') ? 'copy' : 'move', params: { pattern: m[2], dest: m[3] } };
-        const r = t.match(/^(renombrar|ren)\s+(.+?)\s+a\s+(.+)$/i);
-        if (r) return { action: 'rename', params: { from: r[2], to: r[3] } };
-        const e = t.match(/^(cambiar\s+extension|ext)\s+(\w+)\s+a\s+(\w+)/i);
-        if (e) return { action: 'changeExt', params: { fromExt: e[2], toExt: e[3] } };
-        const d = t.match(/^(eliminar|borrar|del)\s+(.+)/i);
-        if (d) return { action: 'delete', params: { pattern: d[2] } };
-        return null;
-      }
-      static filterFiles(nodes, pattern) {
-        const res = [];
-        const walk = (list) => { for (const n of list) { if (n.kind === 'file' && CommandParser.matchPattern(n.name, pattern)) res.push(n); if (n.children) walk(n.children); } };
-        walk(nodes); return res;
-      }
-      static matchPattern(name, pattern) {
-        const regex = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.');
-        return new RegExp(`^${regex}$`, 'i').test(name);
-      }
+/** Lista de tarjetas de ficheros. */
+class FileListUI {
+  #container = document.getElementById('fileList');
+  #bus; #mode = 'menuDirecto'; #selected = null;
+  constructor(bus) {
+    this.#bus = bus;
+    bus.on('filelist:show', ch => this.render(ch));
+    bus.on('config:updated', c => { this.#mode = c.modoInteraccion || 'menuDirecto'; this.#clear(); });
+  }
+  #clear() { if (this.#selected) { this.#selected.classList.remove('selected'); this.#selected = null; } }
+  render(children) {
+    this.#container.innerHTML = '';
+    this.#selected = null;
+    if (!children?.length) {
+      this.#container.innerHTML = '<div class="empty" style="padding:20px;text-align:center;">Carpeta vacía</div>';
+      return;
     }
-
-    // ============================================
-    // 📐 GeometryEngine
-    // ============================================
-    class GeometryEngine {
-      static calculate(type, count, btnSize, center) {
-        switch (type) {
-          case 'anillo': return this.ring(count, btnSize);
-          case 'abanico': return this.fan(count, btnSize, center);
-          case 'espiral': return this.spiral(count, btnSize);
-          case 'columna': return this.column(count, btnSize, center);
-          default: return this.fan(count, btnSize, center);
+    for (const child of children) {
+      const card = document.createElement('div');
+      card.className = 'file-card';
+      card.innerHTML = `<div class="file-icon">${child.kind === 'directory' ? '📁' : '📄'}</div><div class="file-name">${child.name}</div>`;
+      const center = () => { const r = card.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; };
+      card.onclick = (e) => {
+        e.stopPropagation();
+        if (this.#mode === 'menuDirecto') {
+          if (child.kind === 'file') {
+            const c = center();
+            this.#bus.emit('context:show', { ...c, node: child, fsHandle: child.handle });
+          } else {
+            this.#bus.emit('tree:select', { path: child.fullPath, node: child });
+          }
+        } else {
+          if (this.#selected === card) this.#clear();
+          else { this.#clear(); card.classList.add('selected'); this.#selected = card; }
+          if (child.kind === 'directory') this.#bus.emit('tree:select', { path: child.fullPath, node: child });
         }
-      }
-      static ring(n, btnSize) { const r = btnSize * 1.6; const pos = []; for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2 - Math.PI / 2; pos.push({ x: Math.cos(a) * r, y: Math.sin(a) * r }); } return pos; }
-      static fan(n, btnSize, center) {
-        const r = btnSize * 1.8; const vw = window.innerWidth; const vh = window.innerHeight; const margin = r + btnSize;
-        let sa = -Math.PI * 0.75, ea = Math.PI * 0.25;
-        if (center.x > vw - margin) { sa = Math.PI * 0.25; ea = Math.PI * 1.25; }
-        if (center.y > vh - margin) { sa = -Math.PI * 1.25; ea = -Math.PI * 0.25; }
-        if (center.x > vw - margin && center.y > vh - margin) { sa = Math.PI * 0.75; ea = Math.PI * 1.75; }
-        if (center.x < margin && center.y > vh - margin) { sa = -Math.PI * 0.75; ea = Math.PI * 0.25; }
-        const pos = []; for (let i = 0; i < n; i++) { const a = sa + (i / (n - 1 || 1)) * (ea - sa); pos.push({ x: Math.cos(a) * r, y: Math.sin(a) * r }); } return pos;
-      }
-      static spiral(n, btnSize) { const ga = 2.399963, br = btnSize * 0.9, rs = btnSize * 0.35; const pos = []; for (let i = 0; i < n; i++) { const a = i * ga, r = br + i * rs; pos.push({ x: Math.cos(a) * r, y: Math.sin(a) * r }); } return pos; }
-      static column(n, btnSize, center) { const sp = btnSize * 1.3, vw = window.innerWidth, margin = btnSize * 2; let dx = 1; if (center.x > vw - margin) dx = -1; const pos = []; for (let i = 0; i < n; i++) { pos.push({ x: dx * sp, y: (i - (n - 1) / 2) * sp }); } return pos; }
-    }
-
-    // ============================================
-    // 🌀 ContextMenuUI
-    // ============================================
-    class ContextMenuUI {
-      #container = document.getElementById('context-menu');
-      #bus; #actions = []; #visible = false; #buttonSize = 48; #geometry = 'abanico'; #target = null;
-      constructor(bus, config) {
-        this.#bus = bus;
-        this.#loadConfig(config);
-        this.#bus.on('context:show', ({ x, y, node, fsHandle }) => this.show(x, y, node, fsHandle));
-        document.addEventListener('click', () => this.hide());
-        this.#container.addEventListener('click', (e) => e.stopPropagation());
-      }
-      #loadConfig(c) {
-        this.#actions = c.actions || [];
-        this.#buttonSize = c.buttonSize || 48;
-        this.#geometry = c.geometria || 'abanico';
-        document.getElementById('geometry-badge').textContent = this.#geometry;
-      }
-      show(x, y, node, fsHandle) {
-        const scale = Math.min(1.5, Math.max(0.5, Math.min(window.innerWidth, window.innerHeight) / 800));
-        const btnSize = this.#buttonSize * scale;
-        const positions = GeometryEngine.calculate(this.#geometry, this.#actions.length, btnSize, { x, y });
-        let maxDist = 0; positions.forEach(p => { const d = Math.sqrt(p.x**2 + p.y**2) + btnSize/2; if (d > maxDist) maxDist = d; });
-        const pad = 10;
-        const adjusted = {
-          x: Math.min(window.innerWidth - maxDist - pad, Math.max(maxDist + pad, x)),
-          y: Math.min(window.innerHeight - maxDist - pad, Math.max(maxDist + pad, y))
-        };
-        this.#target = { x: adjusted.x, y: adjusted.y, node, fsHandle };
-        this.#container.style.left = adjusted.x + 'px'; this.#container.style.top = adjusted.y + 'px';
-        this.#renderButtons(btnSize, positions);
-        this.#container.classList.add('active'); this.#visible = true;
-        this.#animate(true);
-      }
-      #renderButtons(btnSize, positions) {
-        this.#container.innerHTML = '';
-        this.#actions.forEach((act, i) => {
-          const btn = document.createElement('button'); btn.className = 'context-btn';
-          btn.title = act.label; btn.textContent = act.icon;
-          btn.style.width = btnSize + 'px'; btn.style.height = btnSize + 'px'; btn.style.fontSize = (btnSize * 0.55) + 'px';
-          btn.style.setProperty('--x', positions[i].x + 'px'); btn.style.setProperty('--y', positions[i].y + 'px');
-          btn.onclick = (e) => { e.stopPropagation(); this.#bus.emit('context:action', { action: act.id, target: this.#target }); this.hide(); };
-          this.#container.appendChild(btn);
-        });
-      }
-      #animate(visible) {
-        const btns = this.#container.querySelectorAll('.context-btn');
-        btns.forEach((b, i) => setTimeout(() => {
-          b.style.transform = visible ? `translate(var(--x), var(--y)) scale(1)` : 'translate(-50%, -50%) scale(0)';
-          b.classList.toggle('visible', visible);
-        }, i * 40));
-      }
-      hide() {
-        if (!this.#visible) return;
-        this.#animate(false); this.#container.classList.remove('active'); this.#visible = false; this.#target = null;
-      }
-      updateConfig(c) { this.#loadConfig(c); }
-    }
-
-    // ============================================
-    // 🌳 TreeViewUI
-    // ============================================
-    class TreeViewUI {
-      #container = document.getElementById('tree-container'); #bus; #modo = 'menuDirecto';
-      constructor(bus) {
-        this.#bus = bus;
-        this.#bus.on('config:updated', c => this.#modo = c.modoInteraccion || 'menuDirecto');
-      }
-      render(nodes) {
-        this.#container.innerHTML = '';
-        if (!nodes || nodes.length === 0) { this.#container.innerHTML = '<div style="padding:8px;color:var(--text-secondary);">Vacío</div>'; return; }
-        this.#renderNodes(nodes, this.#container, '');
-      }
-      #renderNodes(nodes, parent, basePath) {
-        for (const node of nodes) {
-          const fullPath = basePath ? `${basePath}/${node.name}` : node.name;
-          const div = document.createElement('div'); div.className = 'tree-item';
-          div.innerHTML = `<span class="icon">${node.kind === 'directory' ? '📁' : '📄'}</span><span class="name">${node.name}</span>`;
-          const getCenter = el => { const r = el.getBoundingClientRect(); return { x: r.left + r.width/2, y: r.top + r.height/2 }; };
-          div.onclick = (e) => {
-            e.stopPropagation();
-            if (node.kind === 'directory') { const cd = div.nextElementSibling; if (cd?.classList.contains('tree-children')) cd.hidden = !cd.hidden; }
-            document.querySelectorAll('.tree-item.selected').forEach(el => el.classList.remove('selected')); div.classList.add('selected');
-            this.#bus.emit('tree:select', { path: fullPath, node });
-            if (node.kind === 'file' && this.#modo === 'menuDirecto') { const c = getCenter(div); this.#bus.emit('context:show', { ...c, node, fsHandle: node.handle }); }
-          };
-          div.ondblclick = (e) => { if (node.kind === 'file' && this.#modo === 'seleccionYMenu') { const c = getCenter(div); this.#bus.emit('context:show', { ...c, node, fsHandle: node.handle }); } };
-          div.oncontextmenu = (e) => { e.preventDefault(); if (node.kind === 'file') { const c = getCenter(div); this.#bus.emit('context:show', { ...c, node, fsHandle: node.handle }); } };
-          let timer;
-          div.ontouchstart = (e) => { timer = setTimeout(() => { if (node.kind === 'file') { const c = getCenter(div); this.#bus.emit('context:show', { ...c, node, fsHandle: node.handle }); } }, 500); };
-          div.ontouchend = () => clearTimeout(timer); div.ontouchmove = () => clearTimeout(timer);
-          parent.appendChild(div);
-          if (node.children?.length) { const cd = document.createElement('div'); cd.className = 'tree-children'; cd.hidden = true; this.#renderNodes(node.children, cd, fullPath); parent.appendChild(cd); }
+      };
+      card.ondblclick = () => {
+        if (child.kind === 'file' && this.#mode === 'seleccionYMenu') {
+          const c = center();
+          this.#bus.emit('context:show', { ...c, node: child, fsHandle: child.handle });
         }
-      }
-    }
-
-    // ============================================
-    // 📋 FileListUI
-    // ============================================
-    class FileListUI {
-      #container = document.getElementById('file-list'); #bus; #modo = 'menuDirecto'; #selected = null;
-      constructor(bus) {
-        this.#bus = bus;
-        this.#bus.on('filelist:show', ch => this.render(ch));
-        this.#bus.on('config:updated', c => { this.#modo = c.modoInteraccion || 'menuDirecto'; this.#clearSelection(); });
-      }
-      #clearSelection() { if (this.#selected) { this.#selected.classList.remove('selected'); this.#selected = null; } }
-      render(children) {
-        this.#container.innerHTML = ''; this.#selected = null;
-        if (!children?.length) { this.#container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-secondary);">Carpeta vacía</div>'; return; }
-        for (const child of children) {
-          const card = document.createElement('div'); card.className = 'file-card';
-          card.innerHTML = `<div class="file-icon">${child.kind === 'directory' ? '📁' : '📄'}</div><div class="file-name">${child.name}</div>`;
-          const getCenter = el => { const r = el.getBoundingClientRect(); return { x: r.left + r.width/2, y: r.top + r.height/2 }; };
-          card.onclick = (e) => {
-            e.stopPropagation();
-            if (this.#modo === 'menuDirecto') { const c = getCenter(card); this.#bus.emit('context:show', { ...c, node: child, fsHandle: child.handle }); }
-            else { if (this.#selected === card) this.#clearSelection(); else { this.#clearSelection(); card.classList.add('selected'); this.#selected = card; } }
-            if (child.kind === 'directory') this.#bus.emit('tree:select', { path: child.fullPath, node: child });
-          };
-          card.ondblclick = (e) => { if (child.kind === 'file' && this.#modo === 'seleccionYMenu') { const c = getCenter(card); this.#bus.emit('context:show', { ...c, node: child, fsHandle: child.handle }); } };
-          card.oncontextmenu = (e) => { e.preventDefault(); if (child.kind === 'file') { const c = getCenter(card); this.#bus.emit('context:show', { ...c, node: child, fsHandle: child.handle }); } };
-          let timer; card.ontouchstart = (e) => { timer = setTimeout(() => { if (child.kind === 'file') { const c = getCenter(card); this.#bus.emit('context:show', { ...c, node: child, fsHandle: child.handle }); } }, 500); };
-          card.ontouchend = () => clearTimeout(timer); card.ontouchmove = () => clearTimeout(timer);
-          this.#container.appendChild(card);
+      };
+      card.oncontextmenu = (e) => {
+        e.preventDefault();
+        if (child.kind === 'file') {
+          const c = center();
+          this.#bus.emit('context:show', { ...c, node: child, fsHandle: child.handle });
         }
-      }
+      };
+      let timer;
+      card.ontouchstart = () => {
+        timer = setTimeout(() => {
+          if (child.kind === 'file') {
+            const c = center();
+            this.#bus.emit('context:show', { ...c, node: child, fsHandle: child.handle });
+          }
+        }, 500);
+      };
+      card.ontouchend = () => clearTimeout(timer);
+      card.ontouchmove = () => clearTimeout(timer);
+      this.#container.appendChild(card);
+    }
+  }
+}
+
+/** Entrada por voz para el chat del organizador. */
+class VoiceInput {
+  #btn; #rec; #bus;
+  constructor(bus) {
+    this.#bus = bus;
+    this.#btn = document.getElementById('micChatBtn');
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { this.#btn.style.display = 'none'; return; }
+    this.#rec = new SR();
+    this.#rec.lang = 'es-ES';
+    this.#rec.interimResults = false;
+    this.#btn.onclick = () => this.toggle();
+    this.#rec.onresult = (e) => {
+      document.getElementById('chatInput').value = e.results[0][0].transcript;
+      this.#btn.classList.remove('listening');
+    };
+    this.#rec.onerror = () => this.#btn.classList.remove('listening');
+  }
+  toggle() {
+    if (this.#btn.classList.contains('listening')) {
+      this.#rec.stop(); this.#btn.classList.remove('listening');
+    } else {
+      this.#rec.start(); this.#btn.classList.add('listening');
+    }
+  }
+}
+
+/** Cajón de configuración JSON del menú. */
+class DrawerUI {
+  #drawer; #textarea; #overlay; #bus; #default;
+  constructor(bus, defaultConfig) {
+    this.#bus = bus;
+    this.#default = defaultConfig;
+    this.#drawer = document.getElementById('configDrawer');
+    this.#textarea = document.getElementById('configJson');
+    this.#overlay = document.getElementById('overlay');
+    document.getElementById('btnOpenDrawer').onclick = () => this.open();
+    document.getElementById('configApply').onclick = () => this.apply();
+    document.getElementById('configReset').onclick = () => this.reset();
+    this.#overlay.onclick = () => this.close();
+  }
+  get config() { return PersistenceService.load('menuConfig', this.#default); }
+  set config(c) { PersistenceService.save('menuConfig', c); }
+  open() {
+    this.#textarea.value = JSON.stringify(this.config, null, 2);
+    this.#drawer.classList.add('open');
+    this.#overlay.classList.add('show');
+  }
+  close() {
+    this.#drawer.classList.remove('open');
+    this.#overlay.classList.remove('show');
+  }
+  apply() {
+    try {
+      const c = JSON.parse(this.#textarea.value);
+      this.config = c;
+      this.#bus.emit('config:updated', c);
+      this.close();
+    } catch (e) { alert('JSON inválido: ' + e.message); }
+  }
+  reset() {
+    this.config = { ...this.#default };
+    this.#textarea.value = JSON.stringify(this.config, null, 2);
+    this.#bus.emit('config:updated', this.config);
+  }
+}
+
+/** Laboratorio: analizador de código con reglas JSON. */
+class LabUI {
+  #bus; #logger; #fs;
+  #editor = document.getElementById('labEditor');
+  #problems = document.getElementById('labProblems');
+  #rulesInput = document.getElementById('labRulesInput');
+  #rules = [];
+  #currentHandle = null;
+
+  constructor(bus, logger, fsService) {
+    this.#bus = bus;
+    this.#logger = logger;
+    this.#fs = fsService;
+    this.#rules = this.#defaultRules();
+    this.#bind();
+    this.#bus.on('file:open', ({ handle, name, content }) => {
+      this.#editor.value = content;
+      this.#currentHandle = handle;
+      this.#logger.log('LAB_ABRIR', name);
+    });
+  }
+  #defaultRules() {
+    return [
+      { id: 'js-var', pattern: '\\bvar\\s+', category: 'estilo', severity: 'medium', action: 'SUGERIR', message: 'Usa let/const en lugar de var', tags: [] },
+      { id: 'js-eq', pattern: '[^=!]==[^=]', category: 'estilo', severity: 'medium', action: 'SUGERIR', message: 'Prefiere === sobre ==', tags: [] },
+      { id: 'js-log', pattern: 'console\\.(log|warn|error|debug)\\s*\\(', category: 'limpieza', severity: 'low', action: 'SUGERIR', message: 'Consola en producción', tags: [] },
+      { id: 'js-eval', pattern: '\\beval\\s*\\(', category: 'seguridad', severity: 'critical', action: 'BLOQUEAR', message: 'Uso de eval: riesgo de inyección', tags: [] },
+      { id: 'js-todo', pattern: 'TODO|FIXME', category: 'pendiente', severity: 'info', action: 'ANOTAR', message: 'Tarea pendiente', tags: [] }
+    ];
+  }
+  #bind() {
+    document.getElementById('labAnalyze').onclick = () => this.#analyze();
+    document.getElementById('labFixVar').onclick = () => this.#fixVar();
+    document.getElementById('labRemoveLogs').onclick = () => this.#removeLogs();
+    document.getElementById('labRename').onclick = () => this.#rename();
+    document.getElementById('labSave').onclick = () => this.#save();
+    document.getElementById('labLoadRules').onclick = () => this.#rulesInput.click();
+    this.#rulesInput.onchange = (e) => this.#loadRulesFile(e.target.files[0]);
+  }
+  async #loadRulesFile(file) {
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const json = JSON.parse(text);
+      const v = FilterDomain.validateSchema(json);
+      if (!v.valid) { alert('JSON inválido:\n' + v.errors.join('\n')); return; }
+      this.#rules = json.rules;
+      this.#logger.log('LAB_REGLAS', `${file.name} (${json.rules.length} reglas)`);
+      alert(`Reglas cargadas: ${json.rules.length}`);
+    } catch (e) { alert('Error: ' + e.message); }
+    this.#rulesInput.value = '';
+  }
+  #analyze() {
+    const code = this.#editor.value;
+    if (!code.trim()) { this.#problems.innerHTML = '<div class="empty">Editor vacío.</div>'; return; }
+    const result = FilterDomain.filter(code, this.#rules, { defaultAction: 'PERMITIR' });
+    this.#renderProblems(result);
+    this.#logger.log('LAB_ANALIZAR', `${result.metadata.totalMatches} coincidencias, acción ${result.globalAction}`);
+  }
+  #renderProblems(result) {
+    if (!result.matches.length) {
+      this.#problems.innerHTML = '<div class="empty">✅ Sin problemas detectados.</div>';
+      return;
+    }
+    const groups = {};
+    result.matches.forEach((m, i) => {
+      const cat = m.rule.category;
+      (groups[cat] = groups[cat] || []).push({ ...m, index: i });
+    });
+    let html = '';
+    for (const [cat, items] of Object.entries(groups)) {
+      html += `<div style="margin-bottom:10px;"><strong style="font-size:0.8rem;text-transform:uppercase;">${cat}</strong>`;
+      items.forEach(item => {
+        const line = this.#editor.value.substring(0, this.#editor.value.indexOf(item.matchedText[0])).split('\n').length;
+        html += `<div class="problem-item" data-line="${line}" style="border-left-color:${this.#severityColor(item.rule.severity)};">
+          <div>${item.rule.message}<span class="sev ${item.rule.severity}">${item.rule.severity}</span></div>
+          <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px;">Línea ${line}: <em>${item.context.substring(0, 80)}</em></div>
+        </div>`;
+      });
+      html += '</div>';
+    }
+    this.#problems.innerHTML = html;
+    this.#problems.querySelectorAll('.problem-item').forEach(el => {
+      el.onclick = () => {
+        const line = parseInt(el.dataset.line, 10);
+        const lines = this.#editor.value.split('\n');
+        let start = 0;
+        for (let i = 0; i < line - 1 && i < lines.length; i++) start += lines[i].length + 1;
+        this.#editor.focus();
+        this.#editor.setSelectionRange(start, start + lines[line - 1]?.length || 0);
+      };
+    });
+  }
+  #severityColor(s) {
+    return { critical: '#ef4444', high: '#f59e0b', medium: '#3b82f6', low: '#10b981', info: '#8b5cf6' }[s] || '#94a3b8';
+  }
+  #fixVar() {
+    const before = this.#editor.value;
+    const after = before.replace(/\bvar\s+/g, 'let ');
+    if (before === after) { alert('No se encontraron "var".'); return; }
+    this.#editor.value = after;
+    this.#logger.log('LAB_FIX_VAR', 'var → let');
+    this.#analyze();
+  }
+  #removeLogs() {
+    const before = this.#editor.value;
+    const after = before.split('\n').filter(l => !/console\.(log|warn|error|debug)\s*\(/.test(l)).join('\n');
+    if (before === after) { alert('No hay console.* para eliminar.'); return; }
+    this.#editor.value = after;
+    this.#logger.log('LAB_QUITAR_LOGS', 'console.* eliminados');
+    this.#analyze();
+  }
+  #rename() {
+    const sel = this.#editor.value.substring(this.#editor.selectionStart, this.#editor.selectionEnd).trim();
+    const oldName = sel || prompt('Nombre a renombrar:');
+    if (!oldName) return;
+    const newName = prompt(`Nuevo nombre para "${oldName}":`);
+    if (!newName || newName === oldName) return;
+    const re = new RegExp(`\\b${oldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g');
+    this.#editor.value = this.#editor.value.replace(re, newName);
+    this.#logger.log('LAB_RENOMBRAR', `${oldName} → ${newName}`);
+    this.#analyze();
+  }
+  async #save() {
+    if (this.#currentHandle) {
+      try {
+        await this.#fs.writeTo(this.#currentHandle, this.#editor.value);
+        this.#logger.log('LAB_GUARDAR', this.#currentHandle.name);
+        alert('Guardado.');
+      } catch (e) { alert('Error al guardar: ' + e.message); }
+    } else {
+      const blob = new Blob([this.#editor.value], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'codigo.txt';
+      a.click();
+      this.#logger.log('LAB_DESCARGAR', 'codigo.txt');
+    }
+  }
+}
+
+/** Motor del juego de texto (reutiliza FilterDomain + Generator + Synergy + Resolver). */
+class TextGameEngine {
+  constructor() {
+    this.tags = new TagRegistry();
+    this.generator = new Generator();
+    this.synergyEngine = new SynergyEngine();
+    this.resolver = new Resolver();
+    this.config = { rules: [], catalog: [], synergies: [], combos: [], defaultAction: 'PERMITIR' };
+  }
+  loadConfig(config) {
+    if (config.tags) for (const [id, meta] of Object.entries(config.tags)) this.tags.register(id, meta);
+    this.config = {
+      rules: config.rules || [],
+      catalog: config.catalog || [],
+      synergies: config.synergies || [],
+      combos: config.combos || [],
+      defaultAction: config.defaultAction || 'PERMITIR'
+    };
+    this.synergyEngine = new SynergyEngine(this.config.synergies, this.config.combos);
+  }
+  run(text) {
+    const filterResult = FilterDomain.filter(text, this.config.rules, { defaultAction: this.config.defaultAction });
+    const tags = [...new Set(filterResult.matches.flatMap(m => m.rule.tags || []))];
+    const entities = this.generator.generate(tags, this.config.catalog, 3);
+    const syn = this.synergyEngine.detect(entities);
+    const effects = this.resolver.apply(entities, syn);
+    return { filter: filterResult, tags, entities, synergies: syn.synergies, combos: syn.combos, effects };
+  }
+}
+
+/** UI del juego de texto. */
+class TextGameUI {
+  #engine; #logger;
+  #input = document.getElementById('textoInput');
+  #result = document.getElementById('textoResult');
+  #status = document.getElementById('textoStatus');
+  constructor(engine, logger) {
+    this.#engine = engine;
+    this.#logger = logger;
+    document.getElementById('textoRunBtn').onclick = () => this.#run();
+    document.getElementById('textoDemoBtn').onclick = () => this.#loadDemo();
+    document.getElementById('textoClearBtn').onclick = () => {
+      this.#input.value = '';
+      this.#result.innerHTML = '<div class="empty">Ejecuta para ver resultados.</div>';
+      this.#status.textContent = 'Limpiado.';
+    };
+    this.#loadDemo();
+  }
+  #loadDemo() {
+    this.#engine.loadConfig(TextGameUI.DEMO_CONFIG);
+    this.#input.value = 'Lanzo una bola de fuego y luego invoco escarcha glacial con magia arcana.';
+    this.#status.textContent = '✅ Config demo cargada. Pulsa ▶ para probar.';
+  }
+  #run() {
+    const text = this.#input.value;
+    if (!text.trim()) { this.#status.textContent = 'Escribe algo primero.'; return; }
+    const result = this.#engine.run(text);
+    this.#render(result);
+    this.#logger.log('TEXTO_RUN', `${result.entities.length} entidades, ${result.matches.length ?? result.filter.matches.length} matches`);
+  }
+  #esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+  #render(r) {
+    let html = '';
+    html += `<div style="margin-bottom:12px;"><strong style="font-size:0.8rem;text-transform:uppercase;">Acción global</strong> <span class="chip action">${this.#esc(r.filter.globalAction)}</span></div>`;
+    html += `<div style="margin-bottom:12px;"><strong style="font-size:0.8rem;text-transform:uppercase;">Tags detectados</strong><br>`;
+    html += r.tags.length ? r.tags.map(t => `<span class="chip tag">${this.#esc(t)}</span>`).join('') : '<span class="empty">Ninguno.</span>';
+    html += `</div>`;
+    html += `<div style="margin-bottom:12px;"><strong style="font-size:0.8rem;text-transform:uppercase;">Entidades generadas</strong><br>`;
+    html += r.entities.length ? r.entities.map(e => `<div class="kv"><span class="k"><span class="chip entity">${this.#esc(e.rarity)}</span> ${this.#esc(e.name)}</span><span class="v">${this.#esc(e.tags.join(','))}</span></div>`).join('') : '<span class="empty">Ninguna.</span>';
+    html += `</div>`;
+    html += `<div style="margin-bottom:12px;"><strong style="font-size:0.8rem;text-transform:uppercase;">Sinergias</strong><br>`;
+    if (!r.synergies.length && !r.combos.length) html += '<span class="empty">Ninguna.</span>';
+    else {
+      for (const s of r.synergies) html += `<span class="chip syn">🔗 ${this.#esc(s.name)}</span>`;
+      for (const c of r.combos) html += `<span class="chip syn">⚡ ${this.#esc(c.name)}</span>`;
+    }
+    html += `</div>`;
+    html += `<div><strong style="font-size:0.8rem;text-transform:uppercase;">Efectos resueltos</strong><br>`;
+    const entries = Object.entries(r.effects);
+    if (!entries.length) html += '<span class="empty">Sin efectos.</span>';
+    else for (const [k, v] of entries) {
+      html += `<div class="kv"><span class="k">${this.#esc(k)}</span><span class="v">${typeof v === 'number' ? Math.round(v * 100) / 100 : this.#esc(v)}</span></div>`;
+    }
+    html += `</div>`;
+    this.#result.innerHTML = html;
+  }
+  static DEMO_CONFIG = {
+    tags: {
+      fuego: { name: 'Fuego', color: '#ff6b35' },
+      hielo: { name: 'Hielo', color: '#4fc3f7' },
+      magia: { name: 'Magia', color: '#c084fc' },
+      sangre: { name: 'Sangre', color: '#e94560' }
+    },
+    rules: [
+      { id: 'r1', pattern: 'fuego|llama|incendio|ígneo', category: 'elemento', severity: 'high', action: 'EXTRACT', message: 'Fuego detectado', tags: ['fuego'] },
+      { id: 'r2', pattern: 'hielo|frío|escarcha|glacial', category: 'elemento', severity: 'high', action: 'EXTRACT', message: 'Hielo detectado', tags: ['hielo'] },
+      { id: 'r3', pattern: 'magia|arcano|hechizo|conjuro', category: 'elemento', severity: 'medium', action: 'EXTRACT', message: 'Magia detectada', tags: ['magia'] },
+      { id: 'r4', pattern: 'sangre|sanguíneo|vampiro', category: 'elemento', severity: 'medium', action: 'EXTRACT', message: 'Sangre detectada', tags: ['sangre'] }
+    ],
+    catalog: [
+      { id: 'e1', name: 'Espada Ígnea', tags: ['fuego'], weight: 3, rarity: 'rare', cost: 2, effects: { damage: 5 } },
+      { id: 'e2', name: 'Escudo Glacial', tags: ['hielo'], weight: 3, rarity: 'rare', cost: 2, effects: { defense: 4 } },
+      { id: 'e3', name: 'Cetro Arcano', tags: ['magia'], weight: 2, rarity: 'epic', cost: 3, effects: { mana: 10 } },
+      { id: 'e4', name: 'Anillo de Sangre', tags: ['sangre'], weight: 2, rarity: 'rare', cost: 2, effects: { lifeSteal: 0.05 } }
+    ],
+    synergies: [
+      { id: 's1', name: 'Cambio Térmico', requiredTags: ['fuego', 'hielo'], effects: { damage: 3, defense: 3 } },
+      { id: 's2', name: 'Convergencia Arcana', requiredTags: ['magia', 'fuego'], effects: { mana: 5, damage: 2 } }
+    ],
+    combos: [
+      { id: 'c1', name: 'Trinidad Elemental', requiredTags: { fuego: 1, hielo: 1, magia: 1 }, effects: { allResist: 0.1 } }
+    ],
+    defaultAction: 'PERMITIR'
+  };
+}
+
+/** Avatar con interpolación de emociones y dibujo en canvas. */
+class AvatarUI {
+  #canvas; #ctx; #bus; #logger;
+  #state = {
+    emocionActual: 'neutro',
+    emocionObjetivo: 'neutro',
+    t: 1,
+    bocaAbierta: false,
+    emocionManual: 'auto',
+    hablando: false
+  };
+  #config = { rate: 1, pitch: 1 };
+  // Parámetros de cada emoción para interpolar
+  static #EMO = {
+    positivo: { mouth: 1, eyeOpen: 0.8, brow: 0.1, color: '#4caf50' },
+    negativo: { mouth: -1, eyeOpen: 0.6, brow: -0.2, color: '#f44336' },
+    neutro: { mouth: 0, eyeOpen: 1, brow: 0, color: '#607d8b' },
+    sorpresa: { mouth: 0.4, eyeOpen: 1.3, brow: 0.3, color: '#ff9800' },
+    enfado: { mouth: -0.8, eyeOpen: 0.9, brow: -0.4, color: '#9c27b0' }
+  };
+  constructor(bus, logger) {
+    this.#bus = bus;
+    this.#logger = logger;
+    this.#canvas = document.getElementById('avatarCanvas');
+    this.#ctx = this.#canvas.getContext('2d');
+    this.#setupResponsive();
+    this.#bind();
+    this.#loop();
+  }
+  #setupResponsive() {
+    const resize = () => {
+      const size = Math.min(window.innerWidth * 0.85, 280);
+      this.#canvas.width = size;
+      this.#canvas.height = size;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+  }
+  #bind() {
+    document.getElementById('avatarSpeak').onclick = () => this.speak(document.getElementById('avatarText').value);
+    document.getElementById('avatarNarrate').onclick = () => this.narrate(document.getElementById('avatarText').value);
+    document.getElementById('avatarStop').onclick = () => this.stop();
+    document.querySelectorAll('#avatarEmotions button').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('#avatarEmotions button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const emo = btn.dataset.emotion;
+        this.#state.emocionManual = emo;
+        if (emo !== 'auto') this.setEmotion(emo);
+      };
+    });
+  }
+  setEmotion(nueva) {
+    if (!AvatarUI.#EMO[nueva]) return;
+    if (nueva !== this.#state.emocionObjetivo) {
+      this.#state.emocionActual = this.#state.emocionObjetivo;
+      this.#state.emocionObjetivo = nueva;
+      this.#state.t = 0;
+    }
+  }
+  speak(text, forcedEmotion = null) {
+    if (!text?.trim()) return;
+    const emotion = forcedEmotion || (this.#state.emocionManual !== 'auto'
+      ? this.#state.emocionManual
+      : SentimentAnalyzer.analyze(text));
+    this.setEmotion(emotion);
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = this.#config.rate;
+    u.pitch = this.#config.pitch;
+    u.lang = 'es-ES';
+    u.onstart = () => { this.#state.hablando = true; };
+    u.onend = () => { this.#state.hablando = false; this.#state.bocaAbierta = false; };
+    u.onboundary = () => { this.#state.bocaAbierta = true; setTimeout(() => this.#state.bocaAbierta = false, 80); };
+    speechSynthesis.speak(u);
+    this.#logger.log('AVATAR_HABLAR', `emoción=${emotion}`);
+  }
+  narrate(text) {
+    if (!text?.trim()) return;
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim());
+    let i = 0;
+    const next = () => {
+      if (i >= sentences.length) return;
+      this.speak(sentences[i].trim() + '.');
+      i++;
+      setTimeout(next, 3000);
+    };
+    next();
+    this.#logger.log('AVATAR_NARRAR', `${sentences.length} frases`);
+  }
+  stop() {
+    speechSynthesis.cancel();
+    this.#state.hablando = false;
+    this.#state.bocaAbierta = false;
+  }
+  #lerp(a, b, t) { return a + (b - a) * t; }
+  #draw() {
+    const ctx = this.#ctx;
+    const w = this.#canvas.width;
+    const h = this.#canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    // Interpolar emociones
+    if (this.#state.t < 1) this.#state.t = Math.min(1, this.#state.t + 0.03);
+    const t = this.#state.t;
+    const ea = AvatarUI.#EMO[this.#state.emocionActual] || AvatarUI.#EMO.neutro;
+    const eb = AvatarUI.#EMO[this.#state.emocionObjetivo] || AvatarUI.#EMO.neutro;
+    const mouth = this.#lerp(ea.mouth, eb.mouth, t);
+    const eyeOpen = this.#lerp(ea.eyeOpen, eb.eyeOpen, t);
+    const brow = this.#lerp(ea.brow, eb.brow, t);
+
+    // Fondo
+    ctx.fillStyle = '#2a2a3c';
+    ctx.beginPath();
+    ctx.arc(w / 2, h / 2, w * 0.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = eb.color;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    // Ojos
+    const eyeY = h / 2 - h * 0.1;
+    const eyeR = w * 0.035;
+    for (const dx of [-w * 0.11, w * 0.11]) {
+      ctx.beginPath();
+      ctx.arc(w / 2 + dx, eyeY, eyeR, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(w / 2 + dx, eyeY, eyeR * eyeOpen, 0, Math.PI * 2);
+      ctx.fillStyle = '#111';
+      ctx.fill();
     }
 
-    // ============================================
-    // 🎤 VoiceInput (para chat del organizador)
-    // ============================================
-    class VoiceInput {
-      #btn; #rec; #bus;
-      constructor(bus) {
-        this.#bus = bus; this.#btn = document.getElementById('mic-btn');
-        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SR) { this.#btn.style.display = 'none'; return; }
-        this.#rec = new SR(); this.#rec.lang = 'es-ES'; this.#rec.interimResults = false;
-        this.#btn.onclick = () => this.toggle();
-        this.#rec.onresult = e => { document.getElementById('chat-input').value = e.results[0][0].transcript; this.#bus.emit('voice:result', e.results[0][0].transcript); this.#btn.classList.remove('listening'); };
-        this.#rec.onerror = () => this.#btn.classList.remove('listening');
-      }
-      toggle() { if (this.#btn.classList.contains('listening')) { this.#rec.stop(); this.#btn.classList.remove('listening'); } else { this.#rec.start(); this.#btn.classList.add('listening'); } }
+    // Cejas
+    const browY = eyeY - eyeR * 2.5;
+    for (const dx of [-w * 0.11, w * 0.11]) {
+      ctx.beginPath();
+      ctx.moveTo(w / 2 + dx - w * 0.06, browY + brow * 10);
+      ctx.lineTo(w / 2 + dx + w * 0.06, browY - brow * 10);
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
     }
 
-    // ============================================
-    // ⚙️ DrawerUI
-    // ============================================
-    class DrawerUI {
-      #drawer; #textarea; #overlay; #bus; #defaultConfig;
-      constructor(bus, defaultConfig) {
-        this.#bus = bus; this.#defaultConfig = defaultConfig;
-        this.#drawer = document.getElementById('config-drawer'); this.#textarea = document.getElementById('config-json'); this.#overlay = document.getElementById('overlay');
-        document.getElementById('btn-open-drawer').onclick = () => this.open();
-        document.getElementById('btn-apply-config').onclick = () => this.apply();
-        document.getElementById('btn-reset-config').onclick = () => this.reset();
-        this.#overlay.onclick = () => this.close();
-      }
-      open() { this.#textarea.value = JSON.stringify(this.currentConfig, null, 2); this.#drawer.classList.add('open'); this.#overlay.classList.add('show'); }
-      close() { this.#drawer.classList.remove('open'); this.#overlay.classList.remove('show'); }
-      apply() { try { const c = JSON.parse(this.#textarea.value); this.currentConfig = c; this.#bus.emit('config:updated', c); this.close(); } catch (e) { alert('JSON inválido: ' + e.message); } }
-      reset() { this.currentConfig = { ...this.#defaultConfig }; this.#textarea.value = JSON.stringify(this.currentConfig, null, 2); this.#bus.emit('config:updated', this.currentConfig); }
-      get currentConfig() { return PersistenceService.load('menuConfig', this.#defaultConfig); }
-      set currentConfig(c) { PersistenceService.save('menuConfig', c); }
+    // Boca
+    ctx.beginPath();
+    const mouthY = h / 2 + h * 0.13;
+    const mouthW = w * 0.09;
+    if (this.#state.bocaAbierta) {
+      ctx.ellipse(w / 2, mouthY, mouthW, w * 0.05, 0, 0, Math.PI * 2);
+    } else if (mouth > 0.05) {
+      ctx.arc(w / 2, mouthY - mouth * 6, mouthW, 0, Math.PI);
+    } else if (mouth < -0.05) {
+      ctx.arc(w / 2, mouthY + Math.abs(mouth) * 6, mouthW, Math.PI, 2 * Math.PI);
+    } else {
+      ctx.moveTo(w / 2 - mouthW, mouthY);
+      ctx.lineTo(w / 2 + mouthW, mouthY);
     }
+    ctx.strokeStyle = eb.color;
+    ctx.lineWidth = 3;
+    ctx.stroke();
 
-    // ============================================
-    // 🎮 GameLoaderService
-    // ============================================
-    class GameLoaderService {
-      #games = []; #container = document.getElementById('game-list');
-      constructor() {
-        this.#games = PersistenceService.load('savedGames', []);
-        this.render();
-        document.getElementById('btn-load-game').onclick = () => this.loadFolder();
-        document.getElementById('btn-start-server').onclick = () => this.startVirtualServer();
-      }
-      async loadFolder() { /* idéntico a versiones anteriores */ }
-      async #readAllFiles(dirHandle, path) { /* idéntico */ }
-      startVirtualServer() {
-        const indexHTML = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Motor Pro Demo</title><style>body{background:#0f172a;color:white;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;}#app{font-size:2rem;}</style></head><body><div id="app">Cargando...</div><script>document.getElementById("app").innerText="✅ Servidor virtual funcionando";<' + '/script></body></html>';
-        const demoGame = { id: 'demo', name: '🎮 Demo Motor Pro', files: [{ name: 'index.html', path: 'index.html', blob: URL.createObjectURL(new Blob([indexHTML], {type: 'text/html'})) }], indexBlob: URL.createObjectURL(new Blob([indexHTML], {type: 'text/html'})) };
-        if (!this.#games.find(g => g.id === 'demo')) { this.#games.push(demoGame); PersistenceService.save('savedGames', this.#games); }
-        this.render();
-      }
-      async runGame(game) { /* idéntico a versiones anteriores */ }
-      render() { /* idéntico */ }
-    }
+    // Etiqueta
+    ctx.font = '10px sans-serif';
+    ctx.fillStyle = 'rgba(150,220,255,0.7)';
+    ctx.fillText(`🤖 ${this.#state.emocionObjetivo}`, 6, 14);
+  }
+  #loop = () => {
+    this.#draw();
+    requestAnimationFrame(this.#loop);
+  };
+}
 
-    // ============================================
-    // 📋 LoggerService
-    // ============================================
-    class LoggerService {
-      #logs = [];
-      constructor() {
-        this.#logs = PersistenceService.load('actionLog', []);
-      }
-      log(action, details = '') {
-        const entry = { timestamp: new Date().toISOString(), action, details };
-        this.#logs.unshift(entry); if (this.#logs.length > 100) this.#logs.pop();
-        PersistenceService.save('actionLog', this.#logs);
-        if (EventBus.instance) EventBus.instance.emit('log:updated', this.#logs);
-      }
-      getLogs() { return [...this.#logs]; }
-      exportAsText() { return this.#logs.map(e => `[${e.timestamp}] ${e.action} ${e.details}`).join('\n'); }
-    }
-
-    // ============================================
-    // 😸 AvatarService
-    // ============================================
-    class AvatarService {
-      #canvas; #ctx; #config; #estado; #bus;
-      constructor(bus) {
-        this.#bus = bus;
-        this.#config = PersistenceService.load('avatarConfig', { skin: 'clasico', rate: 1, pitch: 1, estiloVoz: 'normal' });
-        this.#estado = { emocionActual: 'neutro', emocionObjetivo: 'neutro', bocaAbierta: false, narrando: false, soloCara: false, emocionManual: 'automatico' };
-        this.#initCanvas();
-        this.#bindEvents();
-      }
-      #initCanvas() {
-        this.#canvas = document.getElementById('cara'); this.#ctx = this.#canvas.getContext('2d');
-        const size = Math.min(window.innerWidth * 0.85, 280); this.#canvas.width = size; this.#canvas.height = size;
-      }
-      #bindEvents() {
-        document.getElementById('btn-hablar-avatar').onclick = () => this.hablar(document.getElementById('texto-avatar').value);
-        document.getElementById('btn-parar-avatar').onclick = () => this.parar();
-        document.getElementById('btn-narrar-avatar').onclick = () => this.narrar(document.getElementById('texto-avatar').value);
-        document.querySelectorAll('.emotion-btns button').forEach(btn => {
-          btn.onclick = () => {
-            this.#estado.emocionManual = btn.dataset.emocion;
-            if (this.#estado.emocionManual !== 'automatico') this.setEmocion(this.#estado.emocionManual);
-          };
-        });
-      }
-      setEmocion(nueva) { this.#estado.emocionObjetivo = nueva; }
-      hablar(texto, emocionForzada = null) {
-        const emocion = emocionForzada || (this.#estado.emocionManual !== 'automatico' ? this.#estado.emocionManual : this.#analizarSentimiento(texto));
-        this.setEmocion(emocion);
-        if (this.#estado.soloCara) return;
-        speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(texto);
-        utterance.rate = this.#config.rate; utterance.pitch = this.#config.pitch;
-        utterance.onstart = () => { this.#estado.bocaAbierta = true; };
-        utterance.onend = () => { this.#estado.bocaAbierta = false; };
-        speechSynthesis.speak(utterance);
-      }
-      narrar(texto) { /* simplificado */ }
-      parar() { speechSynthesis.cancel(); this.#estado.bocaAbierta = false; }
-      #analizarSentimiento(texto) {
-        const lexicon = { 'feliz': 'positivo', 'triste': 'negativo', 'sorpresa': 'sorpresa', 'enfadado': 'enfado' };
-        for (const [palabra, emocion] of Object.entries(lexicon)) { if (texto.toLowerCase().includes(palabra)) return emocion; }
-        return 'neutro';
-      }
-      dibujar() {
-        if (!this.#ctx) return;
-        const ctx = this.#ctx; const w = this.#canvas.width, h = this.#canvas.height;
-        ctx.clearRect(0, 0, w, h);
-        ctx.fillStyle = '#2a2a3c'; ctx.beginPath(); ctx.arc(w/2, h/2, w*0.4, 0, Math.PI*2); ctx.fill();
-        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
-        ctx.beginPath(); ctx.arc(w/2-30, h/2-30, 8, 0, Math.PI); ctx.stroke();
-        ctx.beginPath(); ctx.arc(w/2+30, h/2-30, 8, 0, Math.PI); ctx.stroke();
-        ctx.beginPath();
-        if (this.#estado.bocaAbierta) ctx.ellipse(w/2, h/2+40, 20, 15, 0, 0, Math.PI*2);
-        else if (this.#estado.emocionActual === 'positivo') ctx.arc(w/2, h/2+30, 20, 0, Math.PI);
-        else if (this.#estado.emocionActual === 'negativo') ctx.arc(w/2, h/2+50, 20, Math.PI, 2*Math.PI);
-        else ctx.moveTo(w/2-20, h/2+40); ctx.lineTo(w/2+20, h/2+40);
-        ctx.stroke();
-        ctx.font = '10px sans-serif'; ctx.fillStyle = 'rgba(0,255,255,0.8)'; ctx.fillText('🤖 IA', 5, 15);
-      }
-    }
-
-    // ============================================
-    // 🎤 TranscriptorService (escuchar)
-    // ============================================
-    class TranscriptorService {
-      #rec; #escuchando = false; #historial = []; #bus;
-      constructor(bus) {
-        this.#bus = bus;
-        this.#historial = PersistenceService.load('transcripciones', []);
+/** Transcriptor de voz con análisis de sentimiento compartido. */
+class TranscriptorUI {
+  #bus; #logger; #rec = null; #listening = false;
+  #historial = [];
+  #liveEl = document.getElementById('transcripcion-en-vivo');
+  #emoEl = document.getElementById('transcriptorEmotion');
+  #histEl = document.getElementById('transcriptorHistorial');
+  #btn = document.getElementById('transcriptorMicBtn');
+  #langSel = document.getElementById('transcriptorLang');
+  constructor(bus, logger) {
+    this.#bus = bus;
+    this.#logger = logger;
+    this.#historial = PersistenceService.load('transcripciones', []);
+    this.#renderHistorial();
+    this.#btn.onclick = () => this.toggle();
+  }
+  toggle() { this.#listening ? this.#stop() : this.#start(); }
+  #start() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { alert('Reconocimiento de voz no soportado.'); return; }
+    this.#rec = new SR();
+    this.#rec.continuous = true;
+    this.#rec.interimResults = true;
+    this.#rec.lang = this.#langSel.value || 'es-ES';
+    this.#rec.onresult = (e) => {
+      const last = e.results[e.results.length - 1];
+      const text = last[0].transcript;
+      this.#liveEl.textContent = text;
+      if (last.isFinal) {
+        const emocion = SentimentAnalyzer.analyze(text);
+        this.#emoEl.className = 'emotion-indicator emocion-' + emocion;
+        this.#historial.unshift({ texto: text, emocion, ts: Date.now() });
+        if (this.#historial.length > 30) this.#historial.pop();
+        PersistenceService.save('transcripciones', this.#historial);
         this.#renderHistorial();
-        document.getElementById('btn-microfono-escuchar').onclick = () => this.toggle();
+        this.#bus.emit('transcriptor:frase', { texto: text, emocion });
+        this.#logger.log('ESCUCHAR', `${emocion}: ${text.substring(0, 40)}`);
       }
-      toggle() { if (this.#escuchando) this.#detener(); else this.#iniciar(); }
-      #iniciar() {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) { alert('No soportado'); return; }
-        this.#rec = new SpeechRecognition(); this.#rec.continuous = true; this.#rec.interimResults = true;
-        this.#rec.lang = document.getElementById('idioma-reconocimiento')?.value || 'es-ES';
-        this.#rec.onresult = (e) => {
-          const texto = e.results[e.results.length-1][0].transcript;
-          document.getElementById('transcripcion-en-vivo').textContent = texto;
-          if (e.results[e.results.length-1].isFinal) {
-            const emocion = this.#analizarSentimiento(texto);
-            this.#historial.unshift({ texto, emocion, timestamp: Date.now() }); if (this.#historial.length > 20) this.#historial.pop();
-            PersistenceService.save('transcripciones', this.#historial);
-            this.#renderHistorial();
-            this.#bus.emit('fraseDetectada', { texto, emocion });
-          }
-        };
-        this.#rec.onerror = () => this.#detener();
-        this.#rec.start(); this.#escuchando = true;
-        document.getElementById('btn-microfono-escuchar').textContent = '⏹️';
+    };
+    this.#rec.onerror = () => this.#stop();
+    this.#rec.start();
+    this.#listening = true;
+    this.#btn.textContent = '⏹';
+  }
+  #stop() {
+    if (this.#rec) { this.#rec.stop(); this.#rec = null; }
+    this.#listening = false;
+    this.#btn.textContent = '🎙';
+    this.#liveEl.textContent = 'Pulsa el micrófono para empezar';
+  }
+  #renderHistorial() {
+    this.#histEl.innerHTML = this.#historial.map(item =>
+      `<div class="item-historial"><span>${item.texto}</span><span class="emocion-tag">${item.emocion}</span></div>`
+    ).join('');
+  }
+}
+
+/** UI del Audio Planetario (usa dominio Atmosphere + SoundPropagator). */
+class AudioUI {
+  #bus; #logger; #audioEngine; #propagator; #renderer; #recorder; #visualizer; #minimap;
+  #emergencyGain = 1;
+  constructor(bus, logger) {
+    this.#bus = bus;
+    this.#logger = logger;
+    this.#audioEngine = new WebAudioEngine();
+    this.#propagator = new SoundPropagator();
+
+    const waveCanvas = document.getElementById('waveCanvas');
+    const analyserCanvas = document.getElementById('analyserCanvas');
+    const resizeCanvases = () => {
+      for (const [c, h] of [[waveCanvas, 140], [analyserCanvas, 70]]) {
+        c.width = c.clientWidth;
+        c.height = h;
       }
-      #detener() { if (this.#rec) { this.#rec.stop(); this.#rec = null; } this.#escuchando = false; document.getElementById('btn-microfono-escuchar').textContent = '🎙️'; document.getElementById('transcripcion-en-vivo').textContent = 'Pulsa el micrófono para empezar'; }
-      #analizarSentimiento(texto) { /* idéntico a AvatarService */ return 'neutro'; }
-      #renderHistorial() {
-        const cont = document.getElementById('historial-escuchar'); if (!cont) return;
-        cont.innerHTML = this.#historial.map(item => `<div class="item-historial"><span>${item.texto}</span><span class="emocion-tag">${item.emocion}</span></div>`).join('');
+      this.#renderer?.draw();
+    };
+    setTimeout(resizeCanvases, 50);
+    window.addEventListener('resize', resizeCanvases);
+
+    this.#renderer = new CanvasWaveformRenderer(waveCanvas);
+    this.#renderer.onSelectionChange = (s, e) => {
+      document.getElementById('selectionInfo').textContent =
+        `Inicio: ${s.toFixed(3)}s | Fin: ${e.toFixed(3)}s | Duración: ${(e - s).toFixed(3)}s`;
+    };
+
+    const atmosRepo = new AtmosphereRepository();
+    atmosRepo.initDefaults();
+    this.#propagator.setAtmosphere(atmosRepo.get('tierra'));
+    this.#updateAtmoInfo(atmosRepo.get('tierra'));
+
+    this.#minimap = new MinimapController(document.getElementById('minimap'), document.getElementById('sourceDot'));
+
+    this.#bind(atmosRepo);
+    this.#buildKeyboard();
+  }
+  #updateAtmoInfo(atm) {
+    document.getElementById('audioAtmoData').innerHTML =
+      `Presión: <span>${atm.pressure.toFixed(3)} atm</span> | Temp: <span>${atm.temperature} K</span> | Vel. sonido: <span>${atm.soundSpeed.toFixed(1)} m/s</span> | Densidad: <span>${atm.density.toFixed(3)} kg/m³</span>`;
+  }
+  #bind(atmosRepo) {
+    document.getElementById('audioFileInput').onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        this.#audioEngine.init();
+        const buf = await file.arrayBuffer();
+        const decoded = await this.#audioEngine.loadSample(buf);
+        this.#renderer.setBuffer(decoded);
+        document.getElementById('audioFileLabel').textContent = '✅ ' + file.name;
+        this.#setStatus('Muestra cargada. Toca y graba.', 'ok');
+        // Iniciar visualizador y grabador si no existen
+        if (!this.#visualizer) this.#visualizer = new AnalyserVisualizer(document.getElementById('analyserCanvas'), this.#audioEngine.getAnalyserNode());
+        if (!this.#recorder) this.#recorder = new MediaRecorderAdapter(this.#audioEngine.getMediaStream());
+        this.#logger.log('AUDIO_CARGAR', file.name);
+      } catch (err) {
+        this.#setStatus('Error al cargar audio: ' + err.message, 'rejected');
       }
+      e.target.value = '';
+    };
+    document.getElementById('audioAtmosphere').onchange = (e) => {
+      const atm = atmosRepo.get(e.target.value);
+      this.#propagator.setAtmosphere(atm);
+      this.#updateAtmoInfo(atm);
+      this.#logger.log('AUDIO_ATMÓSFERA', atm.name);
+    };
+    document.getElementById('audioGainBoost').oninput = (e) => {
+      const v = parseInt(e.target.value, 10);
+      document.getElementById('audioGainValue').textContent = '×' + v;
+      this.#emergencyGain = v;
+    };
+    document.getElementById('audioRecBtn').onclick = () => {
+      if (!this.#audioEngine.initialized) this.#audioEngine.init();
+      if (!this.#recorder) this.#recorder = new MediaRecorderAdapter(this.#audioEngine.getMediaStream());
+      try {
+        this.#recorder.start();
+        document.getElementById('audioRecBtn').disabled = true;
+        document.getElementById('audioStopBtn').disabled = false;
+        this.#setStatus('🔴 Grabando... ¡Toca las notas!', 'partial');
+      } catch (e) { this.#setStatus('Error: ' + e.message, 'rejected'); }
+    };
+    document.getElementById('audioStopBtn').onclick = async () => {
+      const blob = await this.#recorder?.stop();
+      document.getElementById('audioRecBtn').disabled = false;
+      document.getElementById('audioStopBtn').disabled = true;
+      if (blob) {
+        const url = URL.createObjectURL(blob);
+        const ext = blob.type.split('/')[1] || 'webm';
+        const link = document.getElementById('audioDownload');
+        link.href = url;
+        link.download = `grabacion_planetaria.${ext}`;
+        link.textContent = `💾 Descargar grabación (.${ext})`;
+        link.style.display = 'block';
+        this.#setStatus('⏹ Grabación detenida. Puedes descargar.', 'ok');
+        this.#logger.log('AUDIO_GRABAR', `${ext}, ${(blob.size / 1024).toFixed(1)} KB`);
+      } else {
+        this.#setStatus('Grabación vacía.', 'rejected');
+      }
+    };
+  }
+  #buildKeyboard() {
+    const notes = [
+      { label: 'Do4', freq: 261.63 }, { label: 'Re4', freq: 293.66 },
+      { label: 'Mi4', freq: 329.63 }, { label: 'Fa4', freq: 349.23 },
+      { label: 'Sol4', freq: 392.00 }, { label: 'La4', freq: 440.00 },
+      { label: 'Si4', freq: 493.88 }, { label: 'Do5', freq: 523.25 }
+    ];
+    const kb = document.getElementById('audioKeyboard');
+    kb.innerHTML = '';
+    notes.forEach(note => {
+      const btn = document.createElement('button');
+      btn.textContent = note.label;
+      btn.onclick = () => {
+        if (!this.#audioEngine.initialized) this.#audioEngine.init();
+        this.#playNote(note.freq, btn);
+      };
+      kb.appendChild(btn);
+    });
+  }
+  #playNote(noteFreq, btn) {
+    if (!this.#audioEngine.fullBuffer) {
+      this.#setStatus('Carga un archivo de audio primero', 'partial');
+      return;
+    }
+    const sel = this.#renderer.getSelection();
+    const slice = this.#audioEngine.createSlice(sel.start, sel.end, 5);
+    if (!slice) { this.#setStatus('Selección inválida', 'rejected'); return; }
+    const params = this.#propagator.process(noteFreq, 261.63, this.#minimap.getSourcePosition(), this.#minimap.getListenerPosition());
+    if (!params) return;
+
+    // Adaptador Enactivo: compensar volumen inaudible
+    const adapted = { ...params };
+    let warning = null;
+    const THRESH = 0.01;
+    if (adapted.volumeFactor < THRESH) {
+      const boost = Math.min(this.#emergencyGain * 100, 150);
+      adapted.volumeFactor = Math.min(adapted.volumeFactor * boost, 1.5);
+      warning = `Volumen bajo: compensación ×${boost.toFixed(1)}`;
+      this.#setStatus(warning, 'partial');
+    } else if (adapted.volumeFactor < 0.05) {
+      warning = `Volumen bajo (${adapted.volumeFactor.toFixed(4)})`;
+      this.#setStatus(warning, 'partial');
+    } else {
+      this.#setStatus('▶ Reproduciendo', 'ok');
     }
 
-    // ============================================
-    // 🔬 CodeEditorUI (Laboratorio) – CORREGIDO Y COMPLETO
-    // ============================================
-    class CodeEditorUI {
-      #editor = null; #currentFileHandle = null; #currentLanguage = 'javascript'; #problems = []; #bus;
-      constructor(bus) {
-        this.#bus = bus;
-        this.#loadDependencies().then(() => { this.#initEditor(); this.#bindEvents(); });
+    this.#audioEngine.playSlice(slice, adapted);
+    document.getElementById('audioParams').innerHTML =
+      `Nota: ${noteFreq.toFixed(1)}Hz | Pitch ×${adapted.pitchMultiplier.toFixed(3)} | Vol: ${adapted.volumeFactor.toFixed(3)} | Cutoff: ${adapted.cutoffFrequency.toFixed(0)}Hz${warning ? `<br>⚠️ ${warning}` : ''}`;
+
+    if (btn) {
+      btn.classList.add('playing');
+      setTimeout(() => btn.classList.remove('playing'), 300);
+    }
+  }
+  #setStatus(text, type) {
+    const el = document.getElementById('audioStatus');
+    el.textContent = text;
+    el.className = 'status ' + (type || 'ok');
+  }
+}
+
+/** Panel de Log. */
+class LogUI {
+  #container = document.getElementById('logContainer');
+  constructor(bus, logger) {
+    bus.on('log:updated', logs => this.render(logs));
+    this.render(logger.getLogs());
+    document.getElementById('logExportBtn').onclick = () => {
+      const blob = new Blob([logger.exportText()], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'log_acciones.txt';
+      a.click();
+    };
+  }
+  render(logs) {
+    this.#container.innerHTML = logs.length
+      ? logs.map(e => `[${e.timestamp}] ${e.action} ${e.details}`).join('\n')
+      : '<div class="empty">Sin registros.</div>';
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   APP — orquestador raíz
+   ═══════════════════════════════════════════════════════════════════════ */
+
+class App {
+  #bus; #fs; #logger; #notif;
+  #treeData = [];
+  #defaultConfig;
+
+  constructor() {
+    this.#bus = new EventBus();
+    this.#fs = new FileSystemService();
+    this.#logger = new LoggerService(this.#bus);
+    this.#notif = new Notifications();
+
+    this.#defaultConfig = {
+      modoInteraccion: 'menuDirecto',
+      geometria: 'abanico',
+      buttonSize: 48,
+      actions: [
+        { id: 'move', icon: '📁', label: 'Mover' },
+        { id: 'copy', icon: '📋', label: 'Copiar' },
+        { id: 'rename', icon: '✏️', label: 'Renombrar' },
+        { id: 'delete', icon: '🗑', label: 'Eliminar' },
+        { id: 'ext', icon: '🔧', label: 'Extensión' }
+      ]
+    };
+
+    // UI compartida
+    this.contextMenu = new ContextMenuUI(this.#bus);
+    this.contextMenu.updateConfig(PersistenceService.load('menuConfig', this.#defaultConfig));
+    this.tree = new TreeViewUI(this.#bus);
+    this.fileList = new FileListUI(this.#bus);
+    this.voice = new VoiceInput(this.#bus);
+    this.drawer = new DrawerUI(this.#bus, this.#defaultConfig);
+    this.logUI = new LogUI(this.#bus, this.#logger);
+
+    // Módulos funcionales
+    this.lab = new LabUI(this.#bus, this.#logger, this.#fs);
+    this.textGame = new TextGameUI(new TextGameEngine(), this.#logger);
+    this.avatar = new AvatarUI(this.#bus, this.#logger);
+    this.transcriptor = new TranscriptorUI(this.#bus, this.#logger);
+    this.audio = new AudioUI(this.#bus, this.#logger);
+
+    this.#bindGlobal();
+    this.#switchTab('organizador');
+  }
+
+  #bindGlobal() {
+    // Eventos del bus
+    this.#bus.on('context:action', ({ action, target }) => this.#handleContextAction(action, target));
+    this.#bus.on('tree:select', ({ node }) => {
+      if (node.kind === 'directory') this.#bus.emit('filelist:show', node.children || []);
+      else if (node.kind === 'file') this.#openFile(node.handle, node.name);
+    });
+    this.#bus.on('config:updated', c => this.contextMenu.updateConfig(c));
+
+    // Botones topbar
+    document.getElementById('btnOpenFolder').onclick = () => this.#openFolder();
+    document.getElementById('btnToggleTheme').onclick = () => this.#toggleTheme();
+    document.getElementById('btnToggleTree').onclick = () => document.getElementById('treePanel').classList.toggle('open');
+
+    // Tabs
+    document.querySelectorAll('.tab').forEach(t => {
+      t.onclick = () => this.#switchTab(t.dataset.tab);
+    });
+
+    // Chat
+    document.getElementById('sendBtn').onclick = () => {
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (!text) return;
+      this.#executeCommand(text);
+      input.value = '';
+    };
+    document.getElementById('chatInput').onkeydown = (e) => {
+      if (e.key === 'Enter') document.getElementById('sendBtn').click();
+    };
+
+    // Tema persistente
+    if (PersistenceService.load('darkMode', false)) {
+      document.body.classList.add('dark');
+      document.getElementById('btnToggleTheme').textContent = '☀️';
+    }
+  }
+
+  #switchTab(tab) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.dataset.panel === tab));
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    // Redibujar canvases si es necesario
+    if (tab === 'audio') setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+    if (tab === 'avatar') setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+  }
+
+  #toggleTheme() {
+    document.body.classList.toggle('dark');
+    const dark = document.body.classList.contains('dark');
+    document.getElementById('btnToggleTheme').textContent = dark ? '☀️' : '🌙';
+    PersistenceService.save('darkMode', dark);
+  }
+
+  async #openFolder() {
+    if (!window.showDirectoryPicker) {
+      this.#notif.show('Tu navegador no soporta File System Access API (usa Chrome/Edge).', 'warning');
+      return;
+    }
+    try {
+      const h = await this.#fs.selectDirectory();
+      if (!h) return;
+      this.#treeData = await this.#fs.scanTree();
+      this.tree.render(this.#treeData);
+      this.fileList.render(this.#treeData);
+      document.getElementById('treePanel').querySelector('div:first-child').textContent = `📁 ${h.name}`;
+      this.#logger.log('CARPETA_ABRIR', h.name);
+    } catch (e) {
+      this.#notif.show('Error al abrir carpeta: ' + e.message, 'error');
+    }
+  }
+
+  async #openFile(handle, name) {
+    try {
+      const file = await handle.getFile();
+      const content = await file.text();
+      this.#bus.emit('file:open', { handle, name, content });
+      // Cambiar a pestaña Lab si es código
+      if (/\.(js|ts|html|css|json|py|md|txt)$/i.test(name)) {
+        this.#switchTab('laboratorio');
       }
-      async #loadDependencies() {
-        if (!window.CodeMirror) {
-          await this.#loadScript('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js');
-          await Promise.all([
-            this.#loadScript('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js'),
-            this.#loadScript('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/htmlmixed/htmlmixed.min.js'),
-            this.#loadScript('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js'),
-            this.#loadScript('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/css/css.min.js'),
-            this.#loadScript('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldcode.min.js'),
-            this.#loadScript('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldgutter.min.js'),
-            this.#loadScript('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/brace-fold.min.js'),
-            this.#loadScript('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/comment-fold.min.js'),
-          ]);
+    } catch (e) {
+      this.#notif.show('Error al abrir fichero: ' + e.message, 'error');
+    }
+  }
+
+  async #handleContextAction(id, target) {
+    const { node, fsHandle } = target;
+    if (!fsHandle || node.kind !== 'file') {
+      this.#notif.show('Solo se puede actuar sobre ficheros.', 'warning');
+      return;
+    }
+    try {
+      switch (id) {
+        case 'move': {
+          const d = prompt('Carpeta destino:');
+          if (d) { await this.#fs.move(fsHandle, d); this.#logger.log('MOVER', `${node.name} → ${d}`); this.#notif.show(`Movido a ${d}`, 'ok'); this.#refresh(); }
+          break;
         }
-        if (!window.jsyaml) await this.#loadScript('https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js');
-        if (!window.acorn) await this.#loadScript('https://unpkg.com/acorn@8.8.0/dist/acorn.js');
-        if (!window.esquery) await this.#loadScript('https://unpkg.com/esquery@1.4.0/dist/esquery.min.js');
-      }
-      #loadScript(src) { return new Promise((resolve, reject) => { const s = document.createElement('script'); s.src = src; s.onload = resolve; s.onerror = reject; document.head.appendChild(s); }); }
-      #initEditor() {
-        this.#editor = CodeMirror(document.getElementById('lab-editor'), {
-          lineNumbers: true, mode: 'javascript', theme: 'dracula', autoCloseBrackets: true, indentUnit: 2, tabSize: 2,
-          foldGutter: true, gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
-          foldOptions: { rangeFinder: new CodeMirror.fold.combine(CodeMirror.fold.brace, CodeMirror.fold.comment) }
-        });
-        this.#editor.setValue('// Abre un archivo desde el explorador o escribe código aquí.');
-      }
-      #bindEvents() {
-        document.getElementById('lab-language').onchange = (e) => { this.#currentLanguage = e.target.value; this.#editor.setOption('mode', this.#currentLanguage === 'html' ? 'htmlmixed' : 'javascript'); };
-        document.getElementById('lab-analyze').onclick = () => this.analyze();
-        document.getElementById('lab-fix-var').onclick = () => this.fixVar();
-        document.getElementById('lab-remove-logs').onclick = () => this.removeLogs();
-        document.getElementById('lab-rename').onclick = () => this.renameSymbol();
-        document.getElementById('lab-save').onclick = () => this.saveFile();
-        document.getElementById('lab-help').onclick = () => this.showHelp();
-        document.getElementById('lab-help-close').onclick = () => { document.getElementById('lab-help-panel').style.display = 'none'; };
-        this.#bus.on('file:open', ({ handle, name, content }) => {
-          this.#currentFileHandle = handle; this.#editor.setValue(content);
-          if (name.endsWith('.html') || name.endsWith('.htm')) { document.getElementById('lab-language').value = 'html'; this.#editor.setOption('mode', 'htmlmixed'); }
-          else { document.getElementById('lab-language').value = 'javascript'; this.#editor.setOption('mode', 'javascript'); }
-          this.#currentLanguage = document.getElementById('lab-language').value;
-        });
-        document.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); this.saveFile(); } });
-      }
-      analyze() { /* igual que antes */ }
-      #renderProblems() { /* igual */ }
-      fixVar() { /* igual */ }
-      removeLogs() { /* igual */ }
-      renameSymbol() { /* igual */ }
-      async saveFile() { /* igual */ }
-      showHelp() { document.getElementById('lab-help-content').innerHTML = '<p><strong>Variables:</strong> Usa <code>let</code> y <code>const</code> en lugar de <code>var</code>.</p><p><strong>Comparaciones:</strong> Prefiere <code>===</code> sobre <code>==</code>.</p><p><strong>Consola:</strong> Elimina <code>console.log</code> en producción.</p><p><strong>Renombrar:</strong> Coloca el cursor sobre una variable y pulsa el botón Renombrar.</p>'; document.getElementById('lab-help-panel').style.display = 'block'; }
-    }
-
-    // ============================================
-    // 🚀 App (orquestador completo)
-    // ============================================
-    class App {
-      #bus; #fs; #treeData = []; #lab; #avatar; #transcriptor; #logger;
-      constructor() {
-        this.#bus = new EventBus(); EventBus.instance = this.#bus;
-        this.#fs = new FileSystemService();
-        this.#logger = new LoggerService();
-        const defaultConfig = {
-          modoInteraccion: 'menuDirecto', geometria: 'abanico', buttonSize: 48,
-          actions: [
-            { id: 'move', icon: '📁', label: 'Mover' }, { id: 'copy', icon: '📋', label: 'Copiar' },
-            { id: 'rename', icon: '✏️', label: 'Renombrar' }, { id: 'delete', icon: '🗑️', label: 'Eliminar' },
-            { id: 'ext', icon: '🔧', label: 'Extensión' }
-          ]
-        };
-        this.menu = new ContextMenuUI(this.#bus, PersistenceService.load('menuConfig', defaultConfig));
-        this.tree = new TreeViewUI(this.#bus);
-        this.fileList = new FileListUI(this.#bus);
-        this.voice = new VoiceInput(this.#bus);
-        this.drawer = new DrawerUI(this.#bus, defaultConfig);
-        this.gameLoader = new GameLoaderService();
-        this.#avatar = new AvatarService(this.#bus);
-        this.#transcriptor = new TranscriptorService(this.#bus);
-        this.#lab = null;
-
-        this.#bus.on('context:action', ({ action, target }) => this.#handleAction(action, target));
-        this.#bus.on('tree:select', ({ node }) => {
-          if (node.kind === 'directory') this.fileList.render(node.children || []);
-          else if (node.kind === 'file') this.#readAndOpenFile(node.handle, node.name);
-        });
-        this.#bus.on('config:updated', c => this.menu.updateConfig(c));
-        this.#bus.on('voice:result', t => this.#executeCommand(t));
-        this.#bus.on('log:updated', (logs) => {
-          const container = document.getElementById('log-container');
-          if (container) container.innerHTML = logs.map(e => `[${e.timestamp}] ${e.action} ${e.details}`).join('<br>');
-        });
-
-        document.getElementById('btn-open-folder').onclick = () => this.#openFolder();
-        document.getElementById('send-btn').onclick = () => { const i = document.getElementById('chat-input'); if (i.value.trim()) this.#executeCommand(i.value); i.value = ''; };
-        document.getElementById('chat-input').onkeypress = e => { if (e.key === 'Enter') document.getElementById('send-btn').click(); };
-        document.getElementById('btn-toggle-theme').onclick = () => {
-          document.body.classList.toggle('dark');
-          const d = document.body.classList.contains('dark');
-          document.getElementById('btn-toggle-theme').textContent = d ? '☀️' : '🌙';
-          PersistenceService.save('darkMode', d);
-        };
-        if (PersistenceService.load('darkMode', false)) { document.body.classList.add('dark'); document.getElementById('btn-toggle-theme').textContent = '☀️'; }
-        document.getElementById('btn-toggle-tree').onclick = () => document.getElementById('right-panel').classList.toggle('open');
-        document.getElementById('btn-export-log').onclick = () => {
-          const blob = new Blob([this.#logger.exportAsText()], {type: 'text/plain'});
-          const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'log_acciones.txt'; a.click();
-        };
-
-        // Tabs
-        document.getElementById('tab-organizador').onclick = () => this.#switchTab('organizador');
-        document.getElementById('tab-juegos').onclick = () => this.#switchTab('juegos');
-        document.getElementById('tab-laboratorio').onclick = () => this.#switchTab('laboratorio');
-        document.getElementById('tab-avatar').onclick = () => this.#switchTab('avatar');
-        document.getElementById('tab-escuchar').onclick = () => this.#switchTab('escuchar');
-        document.getElementById('tab-log').onclick = () => this.#switchTab('log');
-
-        // Bucle de animación del avatar
-        const loop = () => { this.#avatar.dibujar(); requestAnimationFrame(loop); };
-        requestAnimationFrame(loop);
-      }
-
-      async #readAndOpenFile(handle, name) {
-        try { const file = await handle.getFile(); const content = await file.text(); this.#bus.emit('file:open', { handle, name, content }); }
-        catch (e) { console.error(e); }
-      }
-
-      #switchTab(tab) {
-        ['organizador','juegos','laboratorio','avatar','escuchar','log'].forEach(id => {
-          const panel = document.getElementById(`panel-${id}`);
-          if (panel) panel.style.display = id === tab ? (id==='organizador'?'flex':'block') : 'none';
-        });
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.getElementById(`tab-${tab}`).classList.add('active');
-        if (tab === 'laboratorio' && !this.#lab) this.#lab = new CodeEditorUI(this.#bus);
-      }
-
-      async #openFolder() {
-        const h = await this.#fs.selectDirectory(); if (!h) return;
-        this.#treeData = await this.#fs.scanTree(); this.tree.render(this.#treeData); this.fileList.render(this.#treeData);
-        document.getElementById('right-panel').querySelector('div:first-child').textContent = `📁 ${h.name}`;
-      }
-
-      async #handleAction(id, target) {
-        const { node, fsHandle } = target; if (!fsHandle) return;
-        try {
-          switch (id) {
-            case 'move': { const d = prompt('Carpeta destino:'); if (d) { await this.#fs.move(fsHandle, d); this.#logger.log('MOVER', `${node.name} → ${d}`); this.#refresh(); alert(`Movido a ${d}`); } break; }
-            case 'copy': { const d = prompt('Carpeta destino:'); if (d) { await this.#fs.copy(fsHandle, d); this.#logger.log('COPIAR', `${node.name} → ${d}`); this.#refresh(); alert(`Copiado a ${d}`); } break; }
-            case 'rename': { const n = prompt('Nuevo nombre:'); if (n) { await this.#fs.rename(fsHandle, n); this.#logger.log('RENOMBRAR', `${node.name} → ${n}`); this.#refresh(); alert('Renombrado'); } break; }
-            case 'delete': { if (confirm(`¿Eliminar ${node.name}?`)) { await this.#fs.delete(fsHandle); this.#logger.log('ELIMINAR', node.name); this.#refresh(); alert('Eliminado'); } break; }
-            case 'ext': { const e = prompt('Nueva extensión:'); if (e) { await this.#fs.changeExtension(fsHandle, e); this.#logger.log('CAMBIAR EXT', `${node.name} → .${e}`); this.#refresh(); alert(`Extensión cambiada a .${e}`); } break; }
-          }
-        } catch (e) { alert('Error: ' + e.message); }
-      }
-
-      async #executeCommand(text) {
-        const cmd = CommandParser.parse(text); if (!cmd) { alert('Comando no reconocido.'); return; }
-        const { action, params } = cmd;
-        const files = CommandParser.filterFiles(this.#treeData, params.pattern || params.from || '');
-        if (!files.length) { alert('No se encontraron archivos.'); return; }
-        if (!confirm(`Se afectarán ${files.length} archivos. ¿Continuar?`)) return;
-        for (const f of files) {
-          try {
-            switch (action) {
-              case 'move': await this.#fs.move(f.handle, params.dest); this.#logger.log('MOVER', `${f.name} → ${params.dest}`); break;
-              case 'copy': await this.#fs.copy(f.handle, params.dest); this.#logger.log('COPIAR', `${f.name} → ${params.dest}`); break;
-              case 'rename': await this.#fs.rename(f.handle, f.name.replace(params.from, params.to)); this.#logger.log('RENOMBRAR', `${f.name}`); break;
-              case 'changeExt': await this.#fs.changeExtension(f.handle, params.toExt); this.#logger.log('CAMBIAR EXT', `${f.name} → .${params.toExt}`); break;
-              case 'delete': await this.#fs.delete(f.handle); this.#logger.log('ELIMINAR', f.name); break;
-            }
-          } catch (e) { console.error(`Error con ${f.name}:`, e); }
+        case 'copy': {
+          const d = prompt('Carpeta destino:');
+          if (d) { await this.#fs.copy(fsHandle, d); this.#logger.log('COPIAR', `${node.name} → ${d}`); this.#notif.show(`Copiado a ${d}`, 'ok'); this.#refresh(); }
+          break;
         }
-        await this.#refresh(); alert('Comando ejecutado.');
+        case 'rename': {
+          const n = prompt('Nuevo nombre:');
+          if (n) { await this.#fs.rename(fsHandle, n); this.#logger.log('RENOMBRAR', `${node.name} → ${n}`); this.#notif.show('Renombrado', 'ok'); this.#refresh(); }
+          break;
+        }
+        case 'delete': {
+          if (confirm(`¿Eliminar ${node.name}?`)) {
+            await this.#fs.delete(fsHandle);
+            this.#logger.log('ELIMINAR', node.name);
+            this.#notif.show('Eliminado', 'ok');
+            this.#refresh();
+          }
+          break;
+        }
+        case 'ext': {
+          const e = prompt('Nueva extensión (sin punto):');
+          if (e) {
+            await this.#fs.changeExtension(fsHandle, e.replace(/^\./, ''));
+            this.#logger.log('CAMBIAR_EXT', `${node.name} → .${e}`);
+            this.#notif.show(`Extensión cambiada a .${e}`, 'ok');
+            this.#refresh();
+          }
+          break;
+        }
       }
-
-      async #refresh() { if (!this.#fs.root) return; this.#treeData = await this.#fs.scanTree(); this.tree.render(this.#treeData); this.fileList.render([]); }
+    } catch (e) {
+      this.#notif.show('Error: ' + e.message, 'error');
     }
+  }
 
-    // Inicialización
-    window.app = new App();
-  </script>
+  async #executeCommand(text) {
+    const cmd = CommandParser.parse(text);
+    if (!cmd) { this.#notif.show('Comando no reconocido. Prueba: "mover *.pdf a Documentos"', 'warning'); return; }
+    if (!this.#treeData.length) { this.#notif.show('Abre una carpeta primero.', 'warning'); return; }
+    const { action, params } = cmd;
+    const files = CommandParser.filterFiles(this.#treeData, params.pattern || params.from || '');
+    if (!files.length) { this.#notif.show('No se encontraron archivos.', 'warning'); return; }
+    if (!confirm(`Se afectarán ${files.length} archivos. ¿Continuar?`)) return;
+    let ok = 0;
+    for (const f of files) {
+      try {
+        switch (action) {
+          case 'move': await this.#fs.move(f.handle, params.dest); this.#logger.log('MOVER', `${f.name} → ${params.dest}`); break;
+          case 'copy': await this.#fs.copy(f.handle, params.dest); this.#logger.log('COPIAR', `${f.name} → ${params.dest}`); break;
+          case 'rename': await this.#fs.rename(f.handle, f.name.replace(params.from, params.to)); this.#logger.log('RENOMBRAR', f.name); break;
+          case 'changeExt': await this.#fs.changeExtension(f.handle, params.toExt); this.#logger.log('CAMBIAR_EXT', `${f.name} → .${params.toExt}`); break;
+          case 'delete': await this.#fs.delete(f.handle); this.#logger.log('ELIMINAR', f.name); break;
+        }
+        ok++;
+      } catch (e) { console.error(`Error con ${f.name}:`, e); }
+    }
+    this.#notif.show(`Comando ejecutado sobre ${ok}/${files.length} archivos.`, 'ok');
+    await this.#refresh();
+  }
+
+  async #refresh() {
+    if (!this.#fs.root) return;
+    this.#treeData = await this.#fs.scanTree();
+    this.tree.render(this.#treeData);
+    this.fileList.render([]);
+  }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  window.app = new App();
+});
+
+</script>
 </body>
 </html>
