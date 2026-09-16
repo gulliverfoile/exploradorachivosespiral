@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0" />
-<title>Asistente Total · Modular Hexagonal</title>
+<title>Asistente Total · Modular Hexagonal · v2</title>
 <style>
   /* ═══════════════════════════════════════════════════════════
      RESET Y VARIABLES GLOBALES
@@ -73,10 +73,10 @@
     flex-direction: column; overflow: auto;
   }
   .panel.active { display: flex; }
-  .panel-organizador { flex-direction: row; }
+  .panel[data-panel="organizador"] { flex-direction: row; }
 
   /* ═══════════════════════════════════════════════════════════
-     ORGANIZADOR: layout
+     ORGANIZADOR
      ═══════════════════════════════════════════════════════════ */
   .organizador-left { flex: 1; display: flex; flex-direction: column; border-right: 1px solid var(--border); overflow: hidden; }
   .organizador-right { width: 320px; display: flex; flex-direction: column; background: var(--surface); overflow-y: auto; }
@@ -95,6 +95,7 @@
     background: var(--accent); color: #fff; cursor: pointer; font-size: 1.1rem;
   }
   .mic-btn.listening { background: var(--danger); animation: pulse 1s infinite; }
+  .mic-btn:disabled { opacity: 0.4; cursor: not-allowed; }
   @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
 
   .file-list { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-wrap: wrap; gap: 10px; align-content: flex-start; }
@@ -120,19 +121,34 @@
   .tree-children { margin-left: 18px; }
 
   /* ═══════════════════════════════════════════════════════════
-     MENÚ CONTEXTUAL RADIAL
+     MENÚ CONTEXTUAL RADIAL · CON ANIMACIÓN "ABANICO VIVIENTE"
      ═══════════════════════════════════════════════════════════ */
   .context-menu { position: fixed; pointer-events: none; z-index: 1000; width: 0; height: 0; }
   .context-menu.active { pointer-events: auto; }
+  .context-menu.active.animate-fan {
+    animation: fan-wobble 4s ease-in-out infinite;
+    transform-origin: 0 0;
+  }
+  @keyframes fan-wobble {
+    0%, 100% { transform: rotate(-3deg); }
+    50%      { transform: rotate(3deg); }
+  }
   .context-btn {
     position: absolute; border-radius: 50%; border: none;
     background: var(--surface); color: var(--text);
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     cursor: pointer; opacity: 0; transform: translate(-50%, -50%) scale(0);
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s;
+    transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease-out;
     display: grid; place-items: center;
   }
   .context-btn.visible { opacity: 1; }
+  .context-btn.visible.breathe {
+    animation: btn-breathe 2.4s ease-in-out infinite;
+  }
+  @keyframes btn-breathe {
+    0%, 100% { filter: drop-shadow(0 4px 8px rgba(0,0,0,0.25)); }
+    50%      { filter: drop-shadow(0 6px 14px rgba(59,130,246,0.55)); }
+  }
 
   /* ═══════════════════════════════════════════════════════════
      CAJÓN DE CONFIGURACIÓN
@@ -178,14 +194,28 @@
     font-size: 0.75rem; margin: 2px 4px 2px 0; background: var(--border); color: var(--text);
   }
   .chip.tag { background: #1e3a5f; color: #93c5fd; }
+  .chip.tag.expanded { background: #2a4a3a; color: #a7f3d0; }
+  .chip.tag.candidate { background: transparent; border: 1px dashed var(--accent); color: var(--accent); }
   .chip.entity { background: #3b1e5f; color: #d8b4fe; }
   .chip.syn { background: #5f3b1e; color: #fdba74; }
   .chip.action { background: #5f1e1e; color: #fca5a5; }
-  .kv { display: flex; justify-content: space-between; font-size: 0.88rem; padding: 4px 0; border-bottom: 1px solid var(--border); }
+  .chip.synthetic { background: #5f1e1e; color: #fca5a5; font-size: 0.65rem; }
+  .kv { display: flex; justify-content: space-between; font-size: 0.88rem; padding: 4px 0; border-bottom: 1px solid var(--border); gap: 8px; }
   .kv:last-child { border-bottom: none; }
-  .kv .k { color: var(--text-secondary); }
-  .kv .v { font-weight: 600; font-family: ui-monospace, monospace; }
+  .kv .k { color: var(--text-secondary); flex: 1; min-width: 0; overflow-wrap: break-word; }
+  .kv .v { font-weight: 600; font-family: ui-monospace, monospace; white-space: nowrap; }
   .empty { color: var(--text-secondary); font-style: italic; font-size: 0.88rem; }
+  .narrative {
+    background: var(--bg); border-left: 3px solid var(--accent);
+    padding: 10px 12px; border-radius: 8px; margin-bottom: 14px;
+    font-style: italic; line-height: 1.5;
+  }
+  details.suggestions { margin-bottom: 10px; font-size: 0.85rem; }
+  details.suggestions summary { cursor: pointer; color: var(--accent); }
+  details.suggestions pre {
+    background: var(--bg); padding: 10px; border-radius: 6px;
+    margin-top: 6px; font-size: 0.72rem; overflow: auto; max-height: 200px;
+  }
 
   /* ═══════════════════════════════════════════════════════════
      LABORATORIO
@@ -305,7 +335,7 @@
   .keyboard button {
     padding: 10px 4px; font-weight: bold; font-size: 0.85rem;
     background: var(--surface); border: 2px solid var(--border);
-    text-shadow: none; margin: 0;
+    margin: 0;
   }
   .keyboard button.playing {
     background: linear-gradient(180deg, #ff8800, #cc4400);
@@ -341,7 +371,7 @@
   .gain-control label { flex: 1; font-size: 0.85rem; color: var(--text-secondary); }
   .gain-control input[type="range"] { flex: 2; margin: 0; }
   .gain-control span { flex: 0 0 50px; text-align: right; color: var(--accent); font-weight: bold; font-size: 0.85rem; }
-  #downloadLink {
+  #audioDownload {
     display: none; color: var(--accent); text-align: center;
     margin-top: 8px; word-break: break-all; font-size: 0.85rem;
   }
@@ -350,12 +380,52 @@
      LOG
      ═══════════════════════════════════════════════════════════ */
   .log-wrap { padding: 16px; display: flex; flex-direction: column; gap: 10px; height: 100%; }
+  .log-toolbar { display: flex; gap: 8px; flex-wrap: wrap; }
+  .log-toolbar input {
+    flex: 1; min-width: 140px; padding: 6px 12px;
+    border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text); font-family: inherit;
+    font-size: 0.9rem;
+  }
+  .log-toolbar input:focus { outline: none; border-color: var(--accent); }
   .log-container {
     flex: 1; background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--radius); padding: 12px;
-    font-family: ui-monospace, monospace; font-size: 0.8rem;
-    overflow-y: auto; white-space: pre-wrap; line-height: 1.5;
+    font-family: ui-monospace, monospace; font-size: 0.82rem;
+    overflow-y: auto;
   }
+  .log-line { padding: 4px 0; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; border-bottom: 1px solid var(--border); }
+  .log-line:last-child { border-bottom: none; }
+  .log-line .ts { color: var(--text-secondary); font-size: 0.72rem; font-family: inherit; }
+  .log-line .action {
+    font-weight: 600; padding: 1px 8px; border-radius: 4px;
+    font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.03em;
+    font-family: inherit; color: #fff;
+    background: #64748b;
+  }
+  .log-line .action[data-t="MOVER"]         { background: #3b82f6; }
+  .log-line .action[data-t="COPIAR"]        { background: #8b5cf6; }
+  .log-line .action[data-t="ELIMINAR"]      { background: #ef4444; }
+  .log-line .action[data-t="RENOMBRAR"]     { background: #f59e0b; }
+  .log-line .action[data-t="CAMBIAR_EXT"]   { background: #10b981; }
+  .log-line .action[data-t="CARPETA_ABRIR"] { background: #0ea5e9; }
+  .log-line .action[data-t="LAB_ANALIZAR"]  { background: #06b6d4; }
+  .log-line .action[data-t="LAB_FIX_VAR"]   { background: #0891b2; }
+  .log-line .action[data-t="LAB_QUITAR_LOGS"] { background: #0e7490; }
+  .log-line .action[data-t="LAB_RENOMBRAR"] { background: #155e75; }
+  .log-line .action[data-t="LAB_ABRIR"]     { background: #0c4a6e; }
+  .log-line .action[data-t="LAB_GUARDAR"]   { background: #0369a1; }
+  .log-line .action[data-t="LAB_DESCARGAR"] { background: #075985; }
+  .log-line .action[data-t="LAB_REGLAS"]    { background: #0c4a6e; }
+  .log-line .action[data-t="TEXTO_RUN"]     { background: #ec4899; }
+  .log-line .action[data-t="AVATAR_HABLAR"] { background: #a855f7; }
+  .log-line .action[data-t="AVATAR_NARRAR"] { background: #9333ea; }
+  .log-line .action[data-t="ESCUCHAR"]      { background: #14b8a6; }
+  .log-line .action[data-t="ESCUCHAR_ERROR"]{ background: #dc2626; }
+  .log-line .action[data-t="AUDIO_CARGAR"]  { background: #f97316; }
+  .log-line .action[data-t="AUDIO_ATMÓSFERA"] { background: #ea580c; }
+  .log-line .action[data-t="AUDIO_GRABAR"]  { background: #b91c1c; }
+  .log-line .details { color: var(--text); flex: 1; min-width: 120px; font-family: inherit; }
 
   /* ═══════════════════════════════════════════════════════════
      NOTIFICACIONES
@@ -419,7 +489,7 @@
 <div class="main">
 
   <!-- ORGANIZADOR -->
-  <div class="panel panel-organizador active" data-panel="organizador">
+  <div class="panel active" data-panel="organizador">
     <div class="organizador-left">
       <div class="chat-bar">
         <input type="text" id="chatInput" placeholder="Ej: mover *.pdf a Documentos" />
@@ -586,9 +656,12 @@ eval("alert('peligro')");</textarea>
   <!-- LOG -->
   <div class="panel" data-panel="log">
     <div class="log-wrap">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
         <h3>📋 Registro de acciones</h3>
         <button class="btn secondary" id="logExportBtn">📥 Exportar (.txt)</button>
+      </div>
+      <div class="log-toolbar">
+        <input type="text" id="logFilter" placeholder="Filtrar acciones..." />
       </div>
       <div class="log-container" id="logContainer"></div>
     </div>
@@ -617,7 +690,7 @@ eval("alert('peligro')");</textarea>
 
 /**
  * Bus de eventos (mediador). Única instancia global para desacoplar capas.
- * Puerto: EventBusPort { on(event, cb), emit(event, payload) }
+ * Puerto: EventBusPort { on(event, cb) → unsubscribe, emit(event, payload) }
  */
 class EventBus {
   #listeners = new Map();
@@ -666,19 +739,21 @@ class LoggerService {
     this.#bus.emit('log:updated', this.#logs);
   }
   getLogs() { return [...this.#logs]; }
-  exportText() { return this.#logs.map(e => `[${e.timestamp}] ${e.action} ${e.details}`).join('\n'); }
+  exportText() {
+    return this.#logs.map(e => `[${e.timestamp}] ${e.action} ${e.details}`).join('\n');
+  }
 }
 
 /**
  * Analizador de sentimiento compartido entre Avatar y Transcriptor.
- * Un único servicio evita duplicidades (principio DRY).
+ * Único servicio (DRY) — evita duplicidades.
  */
 class SentimentAnalyzer {
   static #LEXICON = {
-    positivo: ['feliz','contento','bien','genial','amor','gracias','alegre','excelente','maravilloso','increíble','bueno','bonito','perfecto','guay','mola'],
-    negativo: ['triste','mal','odio','miedo','feo','horrible','terrible','pésimo','tristeza','llorar','solo','sufrir','pena'],
-    sorpresa: ['wow','vaya','sorpresa','inesperado','increíble','flipando','no me lo creo','ostras','madre mía'],
-    enfado: ['furioso','rabia','estúpido','idiota','enfadado','cabreado','molesto','harto','fatal','asco']
+    positivo: ['feliz','contento','bien','genial','amor','gracias','alegre','excelente','maravilloso','increíble','bueno','bonito','perfecto','guay','mola','fantástico','estupendo','encantado','disfrutar','sonrisa'],
+    negativo: ['triste','mal','odio','miedo','feo','horrible','terrible','pésimo','tristeza','llorar','solo','sufrir','pena','deprimido','angustia','fatal','asco'],
+    sorpresa: ['wow','vaya','sorpresa','inesperado','increíble','flipando','no me lo creo','ostras','madre mía','alucino','impresionante'],
+    enfado: ['furioso','rabia','estúpido','idiota','enfadado','cabreado','molesto','harto','asco','indignado','cabreo','bronca']
   };
   static #NEGATIONS = /\b(no|sin|nunca|jamás|nada)\s+/;
   static analyze(text) {
@@ -689,8 +764,13 @@ class SentimentAnalyzer {
     for (const [emotion, words] of Object.entries(SentimentAnalyzer.#LEXICON)) {
       for (const w of words) if (t.includes(w)) scores[emotion] += 1;
     }
-    if (negated) { const tmp = scores.positivo; scores.positivo = scores.negativo; scores.negativo = tmp; }
-    let best = 'neutro'; let bestScore = 0;
+    if (negated) {
+      const tmp = scores.positivo;
+      scores.positivo = scores.negativo;
+      scores.negativo = tmp;
+    }
+    let best = 'neutro';
+    let bestScore = 0;
     for (const [e, s] of Object.entries(scores)) {
       if (s > bestScore) { best = e; bestScore = s; }
     }
@@ -791,6 +871,157 @@ const FilterDomain = (() => {
   return { validateRule, validateSchema, filter, SEVERITY_ORDER };
 })();
 
+/**
+ * Descubre tags en un texto y genera similares.
+ * Modos:
+ *   1. Búsqueda directa: reglas existentes.
+ *   2. Descubrimiento: palabras significativas no cubiertas.
+ *   3. Expansión: similares declarados o derivados por morfología + co-ocurrencia.
+ */
+class TagDiscovery {
+  static #DEFAULT_SIMILARITY = {
+    fuego:  ['llama','brasa','incendio','ígneo','calor','ardiente','flama','pira','arder','quemar'],
+    hielo:  ['frío','escarcha','glacial','congelado','nieve','helado','gélido','nevar','gélida'],
+    magia:  ['arcano','hechizo','conjuro','mágico','encantamiento','brujería','sortilegio','arcana'],
+    sangre: ['sanguíneo','vampiro','cruento','vital','rojo','hemoglobina','sangrar','sangriento'],
+    agua:   ['acuático','húmedo','marino','océano','lluvia','marea','fluido','mojar','acuosa'],
+    tierra: ['terráqueo','rocoso','mineral','suelo','pétreo','geológico','roca','terroso'],
+    aire:   ['aéreo','viento','ventoso','gaseoso','brisa','ráfaga','soplar','airoso'],
+    luz:    ['luminoso','brillante','resplandeciente','radiante','fulgor','destello','brillar','luminiscencia'],
+    sombra: ['oscuro','tenebroso','umbroso','negro','penumbra','siniestro','oscurecer','sombrío'],
+    vida:   ['vital','viviente','orgánico','floreciente','palpitante','vivir','vivo'],
+    muerte: ['mortífero','necrótico','fúnebre','cadavérico','morir','matar','letal'],
+    tiempo: ['temporal','temporalidad','eterno','efímero','cronológico','instante','momento'],
+    mente:  ['mental','psíquico','cognitivo','pensamiento','consciencia','razón','lógica'],
+    caos:   ['caótico','desorden','anarquía','turbulencia','descontrol','confusión'],
+    orden:  ['ordenado','estructura','armonía','sistema','ley','regla','equilibrio']
+  };
+
+  static #STOPWORDS = new Set([
+    'el','la','los','las','un','una','unos','unas','de','del','al','a','en','con','por','para',
+    'que','y','o','u','pero','si','no','es','son','está','están','hay','ser','estar','tener',
+    'yo','tú','él','ella','nosotros','vosotros','ellos','me','te','se','nos','os','mi','tu','su',
+    'este','esta','esto','estos','estas','ese','esa','eso','aquel','aquella','lo','le','les',
+    'como','cuando','donde','quien','cual','muy','más','menos','tan','tanto','poco','mucho',
+    'también','tampoco','ya','aún','todavía','siempre','nunca','jamás','aquí','allí','ahora',
+    'luego','después','antes','mientras','entonces','pues','así','solo','sólo','hasta','desde',
+    'sobre','bajo','entre','hacia','contra','sin','según','durante','mediante','todo','toda',
+    'todos','todas','otro','otra','otros','otras','mismo','misma','cada','cualquier','quiero',
+    'puedo','hago','hacer','digo','decir','voy','ir','viene','venir','tiene','tengo','luego'
+  ]);
+
+  static #SUFFIXES = ['oso','osa','ico','ica','al','ar','ente','ivo','iva','ado','ada','ido','ida','ero','era','ación','ador','ismo','ista','dad','mente'];
+  static #PREFIXES = ['des','in','im','re','pre','anti','sobre','sub','inter','trans'];
+
+  #similarity;
+
+  constructor(similarity = null) {
+    this.#similarity = { ...TagDiscovery.#DEFAULT_SIMILARITY, ...(similarity || {}) };
+  }
+
+  /** Devuelve { direct, candidates, expanded, suggestions }. */
+  discover(text, rules, registeredTags = []) {
+    const lower = String(text || '').toLowerCase();
+    const registeredSet = new Set(registeredTags);
+
+    // 1. Tags directos vía reglas
+    const direct = [];
+    for (const rule of rules) {
+      try {
+        const re = new RegExp(rule.pattern, 'i');
+        if (re.test(text)) {
+          for (const t of (rule.tags || [])) {
+            if (!direct.includes(t)) direct.push(t);
+          }
+        }
+      } catch {}
+    }
+
+    // 2. Tokens significativos
+    const tokens = lower
+      .replace(/[^\wáéíóúüñ\s]/g, ' ')
+      .split(/\s+/)
+      .filter(w => w.length >= 4 && !TagDiscovery.#STOPWORDS.has(w));
+
+    // 3. Candidatos: tokens no cubiertos por reglas ni registrados
+    const candidates = [];
+    const seen = new Set();
+    for (const w of tokens) {
+      if (seen.has(w)) continue;
+      seen.add(w);
+      if (direct.includes(w) || registeredSet.has(w)) continue;
+      let covered = false;
+      for (const r of rules) {
+        try {
+          if (new RegExp(`\\b${w}\\b`, 'i').test(r.pattern)) { covered = true; break; }
+        } catch {}
+      }
+      if (!covered) candidates.push(w);
+    }
+
+    // 4. Expansión a similares
+    const expanded = {};
+    for (const tag of [...direct, ...candidates]) {
+      expanded[tag] = this.#similarity[tag] || this.#deriveSimilar(tag, tokens);
+    }
+
+    // 5. Sugerencias de reglas para candidatos recurrentes
+    const freq = {};
+    for (const t of tokens) freq[t] = (freq[t] || 0) + 1;
+    const suggestions = candidates
+      .filter(c => freq[c] >= 2 || expanded[c].length > 0)
+      .slice(0, 6)
+      .map(c => ({
+        id: `auto_${c}`,
+        pattern: `\\b${c}\\b`,
+        category: 'descubierto',
+        severity: 'info',
+        action: 'EXTRACT',
+        message: `Tag emergente: ${c}`,
+        tags: [c]
+      }));
+
+    return { direct, candidates, expanded, suggestions };
+  }
+
+  /** Similares declarados para un tag conocido. */
+  expand(tag) { return this.#similarity[tag] || []; }
+
+  /** Similares derivados por morfología + co-ocurrencia. */
+  #deriveSimilar(tag, tokens) {
+    const similar = new Set();
+
+    // a) Morfología
+    const roots = new Set([tag]);
+    for (const suf of TagDiscovery.#SUFFIXES) {
+      if (tag.endsWith(suf) && tag.length > suf.length + 2) roots.add(tag.slice(0, -suf.length));
+    }
+    for (const pre of TagDiscovery.#PREFIXES) {
+      if (tag.startsWith(pre) && tag.length > pre.length + 2) roots.add(tag.slice(pre.length));
+    }
+    for (const t of tokens) {
+      if (t === tag) continue;
+      for (const root of roots) {
+        if (root.length >= 3 && t.includes(root)) { similar.add(t); break; }
+      }
+    }
+
+    // b) Ventana de co-ocurrencia (±3 palabras)
+    const idx = tokens.indexOf(tag);
+    if (idx >= 0) {
+      const lo = Math.max(0, idx - 3);
+      const hi = Math.min(tokens.length, idx + 4);
+      for (let i = lo; i < hi; i++) {
+        if (i !== idx && tokens[i].length >= 4 && !TagDiscovery.#STOPWORDS.has(tokens[i])) {
+          similar.add(tokens[i]);
+        }
+      }
+    }
+
+    return [...similar].slice(0, 5);
+  }
+}
+
 /** Registro de tags (para el juego de texto). */
 class TagRegistry {
   #tags = new Map();
@@ -821,9 +1052,13 @@ class Generator {
     for (let i = 0; i < count; i++) {
       const picked = this.#pick(weighted);
       result.push({
-        id: `${picked.id}_${i}`, baseId: picked.id, name: picked.name,
-        tags: picked.tags || [], rarity: picked.rarity || 'common',
-        cost: picked.cost || 1, effects: { ...(picked.effects || {}) }
+        id: `${picked.id}_${i}`,
+        baseId: picked.id,
+        name: picked.name,
+        tags: picked.tags || [],
+        rarity: picked.rarity || 'common',
+        cost: picked.cost || 1,
+        effects: { ...(picked.effects || {}) }
       });
     }
     return result;
@@ -1389,10 +1624,15 @@ class Notifications {
   }
 }
 
-/** Menú contextual radial. */
+/** Menú contextual radial con animación "abanico viviente". */
 class ContextMenuUI {
   #container = document.getElementById('contextMenu');
-  #bus; #actions = []; #visible = false; #size = 48; #geometry = 'abanico'; #target = null;
+  #bus;
+  #actions = [];
+  #visible = false;
+  #size = 48;
+  #geometry = 'abanico';
+  #target = null;
   constructor(bus) {
     this.#bus = bus;
     bus.on('context:show', ({ x, y, node, fsHandle }) => this.show(x, y, node, fsHandle));
@@ -1421,6 +1661,9 @@ class ContextMenuUI {
     this.#container.style.top = adj.y + 'px';
     this.#render(btnSize, positions);
     this.#container.classList.add('active');
+    // Animación "abanico viviente" solo si la geometría es abanico
+    if (this.#geometry === 'abanico') this.#container.classList.add('animate-fan');
+    else this.#container.classList.remove('animate-fan');
     this.#visible = true;
     this.#animate(true);
   }
@@ -1449,12 +1692,15 @@ class ContextMenuUI {
     btns.forEach((b, i) => setTimeout(() => {
       b.style.transform = show ? 'translate(var(--x), var(--y)) scale(1)' : 'translate(-50%, -50%) scale(0)';
       b.classList.toggle('visible', show);
+      if (show) b.classList.add('breathe');
+      else b.classList.remove('breathe');
     }, i * 40));
   }
   hide() {
     if (!this.#visible) return;
     this.#animate(false);
     this.#container.classList.remove('active');
+    this.#container.classList.remove('animate-fan');
     this.#visible = false;
     this.#target = null;
   }
@@ -1463,7 +1709,8 @@ class ContextMenuUI {
 /** Árbol de ficheros. */
 class TreeViewUI {
   #container = document.getElementById('treeContainer');
-  #bus; #mode = 'menuDirecto';
+  #bus;
+  #mode = 'menuDirecto';
   constructor(bus) {
     this.#bus = bus;
     bus.on('config:updated', c => { this.#mode = c.modoInteraccion || 'menuDirecto'; });
@@ -1536,7 +1783,9 @@ class TreeViewUI {
 /** Lista de tarjetas de ficheros. */
 class FileListUI {
   #container = document.getElementById('fileList');
-  #bus; #mode = 'menuDirecto'; #selected = null;
+  #bus;
+  #mode = 'menuDirecto';
+  #selected = null;
   constructor(bus) {
     this.#bus = bus;
     bus.on('filelist:show', ch => this.render(ch));
@@ -1599,29 +1848,60 @@ class FileListUI {
   }
 }
 
-/** Entrada por voz para el chat del organizador. */
+/** Entrada por voz para el chat del organizador (con diagnóstico). */
 class VoiceInput {
-  #btn; #rec; #bus;
+  #btn; #rec; #bus; #listening = false; #restartOnEnd = false;
   constructor(bus) {
     this.#bus = bus;
     this.#btn = document.getElementById('micChatBtn');
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { this.#btn.style.display = 'none'; return; }
+    const issues = [];
+    if (location.protocol === 'file:') issues.push('Requiere HTTPS o localhost');
+    if (!window.isSecureContext) issues.push('Contexto no seguro');
+    if (!SR) issues.push('Navegador sin soporte');
+    if (issues.length) {
+      this.#btn.disabled = true;
+      this.#btn.title = issues.join(' · ');
+      return;
+    }
     this.#rec = new SR();
     this.#rec.lang = 'es-ES';
     this.#rec.interimResults = false;
+    this.#rec.continuous = false;
     this.#btn.onclick = () => this.toggle();
     this.#rec.onresult = (e) => {
       document.getElementById('chatInput').value = e.results[0][0].transcript;
       this.#btn.classList.remove('listening');
+      this.#listening = false;
+      this.#restartOnEnd = false;
     };
-    this.#rec.onerror = () => this.#btn.classList.remove('listening');
+    this.#rec.onerror = () => {
+      this.#btn.classList.remove('listening');
+      this.#listening = false;
+      this.#restartOnEnd = false;
+    };
+    this.#rec.onend = () => {
+      if (this.#listening && this.#restartOnEnd) {
+        this.#restartOnEnd = false;
+        try { this.#rec.start(); this.#restartOnEnd = true; } catch {}
+      }
+    };
   }
   toggle() {
-    if (this.#btn.classList.contains('listening')) {
-      this.#rec.stop(); this.#btn.classList.remove('listening');
+    if (this.#listening) {
+      this.#restartOnEnd = false;
+      try { this.#rec.stop(); } catch {}
+      this.#btn.classList.remove('listening');
+      this.#listening = false;
     } else {
-      this.#rec.start(); this.#btn.classList.add('listening');
+      try {
+        this.#rec.start();
+        this.#btn.classList.add('listening');
+        this.#listening = true;
+        this.#restartOnEnd = true;
+      } catch (e) {
+        console.warn('[VoiceInput] Error:', e.message);
+      }
     }
   }
 }
@@ -1755,7 +2035,7 @@ class LabUI {
         let start = 0;
         for (let i = 0; i < line - 1 && i < lines.length; i++) start += lines[i].length + 1;
         this.#editor.focus();
-        this.#editor.setSelectionRange(start, start + lines[line - 1]?.length || 0);
+        this.#editor.setSelectionRange(start, start + (lines[line - 1]?.length || 0));
       };
     });
   }
@@ -1807,13 +2087,15 @@ class LabUI {
   }
 }
 
-/** Motor del juego de texto (reutiliza FilterDomain + Generator + Synergy + Resolver). */
+/** Motor del juego de texto (reutiliza FilterDomain + Generator + Synergy + Resolver + TagDiscovery). */
 class TextGameEngine {
   constructor() {
     this.tags = new TagRegistry();
     this.generator = new Generator();
     this.synergyEngine = new SynergyEngine();
     this.resolver = new Resolver();
+    this.discovery = new TagDiscovery();
+    this.dynamicTags = new Set();
     this.config = { rules: [], catalog: [], synergies: [], combos: [], defaultAction: 'PERMITIR' };
   }
   loadConfig(config) {
@@ -1826,23 +2108,95 @@ class TextGameEngine {
       defaultAction: config.defaultAction || 'PERMITIR'
     };
     this.synergyEngine = new SynergyEngine(this.config.synergies, this.config.combos);
+    this.dynamicTags.clear();
+    if (config.similarity) this.discovery = new TagDiscovery(config.similarity);
+    else this.discovery = new TagDiscovery();
   }
   run(text) {
+    // 1. Filtrado clásico
     const filterResult = FilterDomain.filter(text, this.config.rules, { defaultAction: this.config.defaultAction });
-    const tags = [...new Set(filterResult.matches.flatMap(m => m.rule.tags || []))];
-    const entities = this.generator.generate(tags, this.config.catalog, 3);
+    const directTags = [...new Set(filterResult.matches.flatMap(m => m.rule.tags || []))];
+
+    // 2. Descubrimiento + expansión
+    const discovery = this.discovery.discover(text, this.config.rules, [...this.dynamicTags]);
+
+    // 3. Tags finales = directos + similares de directos + candidatos (máx 2)
+    const expandedTags = new Set(directTags);
+    for (const t of directTags) {
+      for (const sim of this.discovery.expand(t)) expandedTags.add(sim);
+    }
+    for (const c of discovery.candidates.slice(0, 2)) {
+      expandedTags.add(c);
+      this.dynamicTags.add(c);
+      if (!this.tags.get(c)) this.tags.register(c, { name: c, color: '#888' });
+    }
+    const tags = [...expandedTags];
+
+    // 4. Generar entidades (con fallback sintético)
+    const entities = this.#generateWithFallback(tags, this.config.catalog, 3);
+
+    // 5. Sinergias + resolución
     const syn = this.synergyEngine.detect(entities);
     const effects = this.resolver.apply(entities, syn);
-    return { filter: filterResult, tags, entities, synergies: syn.synergies, combos: syn.combos, effects };
+
+    return {
+      filter: filterResult,
+      tags,
+      directTags,
+      discovery,
+      entities,
+      synergies: syn.synergies,
+      combos: syn.combos,
+      effects
+    };
+  }
+  #generateWithFallback(tags, catalog, count) {
+    const result = [];
+    const normal = this.generator.generate(tags, catalog, count);
+    for (const e of normal) result.push(e);
+
+    const covered = new Set(normal.flatMap(e => e.tags));
+    const uncovered = tags.filter(t => !covered.has(t) && !catalog.some(c => (c.tags || []).includes(t)));
+    for (const tag of uncovered.slice(0, 3)) {
+      result.push({
+        id: `synth_${tag}_${result.length}`,
+        baseId: 'synthetic',
+        name: `Esencia de ${tag}`,
+        tags: [tag],
+        rarity: 'common',
+        cost: 1,
+        effects: { energy: 1 },
+        synthetic: true
+      });
+    }
+    return result.slice(0, 6);
+  }
+  narrate(result) {
+    const parts = [];
+    if (result.entities.length) {
+      parts.push(`Invocas: ${result.entities.map(e => e.name).join(', ')}.`);
+    }
+    if (result.synergies.length) {
+      parts.push(`Sinergias: ${result.synergies.map(s => s.name).join(', ')}.`);
+    }
+    if (result.combos.length) {
+      parts.push(`¡Combo! ${result.combos.map(c => c.name).join(', ')}.`);
+    }
+    const names = { damage: 'daño', defense: 'defensa', mana: 'maná', lifeSteal: 'robo de vida', energy: 'energía', allResist: 'resistencia' };
+    const eff = Object.entries(result.effects)
+      .map(([k, v]) => `${names[k] || k} +${typeof v === 'number' ? Math.round(v * 100) / 100 : v}`);
+    if (eff.length) parts.push(`Efectos: ${eff.join(', ')}.`);
+    return parts.join(' ') || 'No ocurre nada.';
   }
 }
 
-/** UI del juego de texto. */
+/** UI del juego de texto con narrativa y descubrimiento. */
 class TextGameUI {
   #engine; #logger;
   #input = document.getElementById('textoInput');
   #result = document.getElementById('textoResult');
   #status = document.getElementById('textoStatus');
+
   constructor(engine, logger) {
     this.#engine = engine;
     this.#logger = logger;
@@ -1857,7 +2211,7 @@ class TextGameUI {
   }
   #loadDemo() {
     this.#engine.loadConfig(TextGameUI.DEMO_CONFIG);
-    this.#input.value = 'Lanzo una bola de fuego y luego invoco escarcha glacial con magia arcana.';
+    this.#input.value = 'Lanzo una bola de fuego y luego invoco escarcha glacial con magia arcana. Quiero congelar el fuego.';
     this.#status.textContent = '✅ Config demo cargada. Pulsa ▶ para probar.';
   }
   #run() {
@@ -1865,56 +2219,106 @@ class TextGameUI {
     if (!text.trim()) { this.#status.textContent = 'Escribe algo primero.'; return; }
     const result = this.#engine.run(text);
     this.#render(result);
-    this.#logger.log('TEXTO_RUN', `${result.entities.length} entidades, ${result.matches.length ?? result.filter.matches.length} matches`);
+    this.#logger.log('TEXTO_RUN', `${result.entities.length} entidades, ${result.tags.length} tags, ${result.discovery.candidates.length} candidatos`);
   }
-  #esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+  #esc(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  }
   #render(r) {
     let html = '';
-    html += `<div style="margin-bottom:12px;"><strong style="font-size:0.8rem;text-transform:uppercase;">Acción global</strong> <span class="chip action">${this.#esc(r.filter.globalAction)}</span></div>`;
-    html += `<div style="margin-bottom:12px;"><strong style="font-size:0.8rem;text-transform:uppercase;">Tags detectados</strong><br>`;
-    html += r.tags.length ? r.tags.map(t => `<span class="chip tag">${this.#esc(t)}</span>`).join('') : '<span class="empty">Ninguno.</span>';
+
+    // Narrativa
+    html += `<div class="narrative">${this.#esc(this.#engine.narrate(r))}</div>`;
+
+    // Acción global
+    html += `<div style="margin-bottom:12px;"><strong style="font-size:0.78rem;text-transform:uppercase;color:var(--text-secondary);">Acción global</strong> <span class="chip action">${this.#esc(r.filter.globalAction)}</span></div>`;
+
+    // Tags directos
+    html += `<div style="margin-bottom:10px;"><strong style="font-size:0.78rem;text-transform:uppercase;color:var(--text-secondary);">Tags directos (reglas)</strong><br>`;
+    html += r.directTags.length
+      ? r.directTags.map(t => `<span class="chip tag">${this.#esc(t)}</span>`).join('')
+      : '<span class="empty">Ninguno.</span>';
     html += `</div>`;
-    html += `<div style="margin-bottom:12px;"><strong style="font-size:0.8rem;text-transform:uppercase;">Entidades generadas</strong><br>`;
-    html += r.entities.length ? r.entities.map(e => `<div class="kv"><span class="k"><span class="chip entity">${this.#esc(e.rarity)}</span> ${this.#esc(e.name)}</span><span class="v">${this.#esc(e.tags.join(','))}</span></div>`).join('') : '<span class="empty">Ninguna.</span>';
+
+    // Tags expandidos
+    const expandedOnly = r.tags.filter(t => !r.directTags.includes(t));
+    html += `<div style="margin-bottom:10px;"><strong style="font-size:0.78rem;text-transform:uppercase;color:var(--text-secondary);">Tags expandidos (similares)</strong><br>`;
+    html += expandedOnly.length
+      ? expandedOnly.map(t => `<span class="chip tag expanded">${this.#esc(t)}</span>`).join('')
+      : '<span class="empty">Ninguno.</span>';
     html += `</div>`;
-    html += `<div style="margin-bottom:12px;"><strong style="font-size:0.8rem;text-transform:uppercase;">Sinergias</strong><br>`;
+
+    // Candidatos descubiertos
+    html += `<div style="margin-bottom:10px;"><strong style="font-size:0.78rem;text-transform:uppercase;color:var(--text-secondary);">Candidatos descubiertos</strong><br>`;
+    html += r.discovery.candidates.length
+      ? r.discovery.candidates.map(c => `<span class="chip tag candidate">${this.#esc(c)}</span>`).join('')
+      : '<span class="empty">Ninguno.</span>';
+    html += `</div>`;
+
+    // Sugerencias
+    if (r.discovery.suggestions.length) {
+      html += `<details class="suggestions"><summary>📌 ${r.discovery.suggestions.length} sugerencias de reglas (clic para ver)</summary>`;
+      html += `<pre>${this.#esc(JSON.stringify(r.discovery.suggestions, null, 2))}</pre>`;
+      html += `</details>`;
+    }
+
+    // Entidades
+    html += `<div style="margin-bottom:10px;"><strong style="font-size:0.78rem;text-transform:uppercase;color:var(--text-secondary);">Entidades generadas</strong><br>`;
+    html += r.entities.length
+      ? r.entities.map(e =>
+          `<div class="kv">
+             <span class="k">
+               <span class="chip entity">${this.#esc(e.rarity)}</span>
+               ${this.#esc(e.name)}
+               ${e.synthetic ? '<span class="chip synthetic">sintética</span>' : ''}
+             </span>
+             <span class="v">${this.#esc(e.tags.join(','))}</span>
+           </div>`).join('')
+      : '<span class="empty">Ninguna.</span>';
+    html += `</div>`;
+
+    // Sinergias
+    html += `<div style="margin-bottom:10px;"><strong style="font-size:0.78rem;text-transform:uppercase;color:var(--text-secondary);">Sinergias y combos</strong><br>`;
     if (!r.synergies.length && !r.combos.length) html += '<span class="empty">Ninguna.</span>';
     else {
       for (const s of r.synergies) html += `<span class="chip syn">🔗 ${this.#esc(s.name)}</span>`;
-      for (const c of r.combos) html += `<span class="chip syn">⚡ ${this.#esc(c.name)}</span>`;
+      for (const c of r.combos)    html += `<span class="chip syn">⚡ ${this.#esc(c.name)}</span>`;
     }
     html += `</div>`;
-    html += `<div><strong style="font-size:0.8rem;text-transform:uppercase;">Efectos resueltos</strong><br>`;
+
+    // Efectos
+    html += `<div><strong style="font-size:0.78rem;text-transform:uppercase;color:var(--text-secondary);">Efectos resueltos</strong><br>`;
     const entries = Object.entries(r.effects);
-    if (!entries.length) html += '<span class="empty">Sin efectos.</span>';
-    else for (const [k, v] of entries) {
-      html += `<div class="kv"><span class="k">${this.#esc(k)}</span><span class="v">${typeof v === 'number' ? Math.round(v * 100) / 100 : this.#esc(v)}</span></div>`;
-    }
+    html += entries.length
+      ? entries.map(([k, v]) => `<div class="kv"><span class="k">${this.#esc(k)}</span><span class="v">${typeof v === 'number' ? Math.round(v * 100) / 100 : this.#esc(v)}</span></div>`).join('')
+      : '<span class="empty">Sin efectos.</span>';
     html += `</div>`;
+
     this.#result.innerHTML = html;
   }
+
   static DEMO_CONFIG = {
     tags: {
-      fuego: { name: 'Fuego', color: '#ff6b35' },
-      hielo: { name: 'Hielo', color: '#4fc3f7' },
-      magia: { name: 'Magia', color: '#c084fc' },
+      fuego:  { name: 'Fuego',  color: '#ff6b35' },
+      hielo:  { name: 'Hielo',  color: '#4fc3f7' },
+      magia:  { name: 'Magia',  color: '#c084fc' },
       sangre: { name: 'Sangre', color: '#e94560' }
     },
     rules: [
-      { id: 'r1', pattern: 'fuego|llama|incendio|ígneo', category: 'elemento', severity: 'high', action: 'EXTRACT', message: 'Fuego detectado', tags: ['fuego'] },
-      { id: 'r2', pattern: 'hielo|frío|escarcha|glacial', category: 'elemento', severity: 'high', action: 'EXTRACT', message: 'Hielo detectado', tags: ['hielo'] },
-      { id: 'r3', pattern: 'magia|arcano|hechizo|conjuro', category: 'elemento', severity: 'medium', action: 'EXTRACT', message: 'Magia detectada', tags: ['magia'] },
-      { id: 'r4', pattern: 'sangre|sanguíneo|vampiro', category: 'elemento', severity: 'medium', action: 'EXTRACT', message: 'Sangre detectada', tags: ['sangre'] }
+      { id: 'r1', pattern: 'fuego|llama|incendio|ígneo',    category: 'elemento', severity: 'high',   action: 'EXTRACT', message: 'Fuego detectado',  tags: ['fuego'] },
+      { id: 'r2', pattern: 'hielo|frío|escarcha|glacial',   category: 'elemento', severity: 'high',   action: 'EXTRACT', message: 'Hielo detectado',  tags: ['hielo'] },
+      { id: 'r3', pattern: 'magia|arcano|hechizo|conjuro',  category: 'elemento', severity: 'medium', action: 'EXTRACT', message: 'Magia detectada',  tags: ['magia'] },
+      { id: 'r4', pattern: 'sangre|sanguíneo|vampiro',      category: 'elemento', severity: 'medium', action: 'EXTRACT', message: 'Sangre detectada', tags: ['sangre'] }
     ],
     catalog: [
-      { id: 'e1', name: 'Espada Ígnea', tags: ['fuego'], weight: 3, rarity: 'rare', cost: 2, effects: { damage: 5 } },
-      { id: 'e2', name: 'Escudo Glacial', tags: ['hielo'], weight: 3, rarity: 'rare', cost: 2, effects: { defense: 4 } },
-      { id: 'e3', name: 'Cetro Arcano', tags: ['magia'], weight: 2, rarity: 'epic', cost: 3, effects: { mana: 10 } },
+      { id: 'e1', name: 'Espada Ígnea',     tags: ['fuego'],  weight: 3, rarity: 'rare', cost: 2, effects: { damage: 5 } },
+      { id: 'e2', name: 'Escudo Glacial',   tags: ['hielo'],  weight: 3, rarity: 'rare', cost: 2, effects: { defense: 4 } },
+      { id: 'e3', name: 'Cetro Arcano',     tags: ['magia'],  weight: 2, rarity: 'epic', cost: 3, effects: { mana: 10 } },
       { id: 'e4', name: 'Anillo de Sangre', tags: ['sangre'], weight: 2, rarity: 'rare', cost: 2, effects: { lifeSteal: 0.05 } }
     ],
     synergies: [
-      { id: 's1', name: 'Cambio Térmico', requiredTags: ['fuego', 'hielo'], effects: { damage: 3, defense: 3 } },
-      { id: 's2', name: 'Convergencia Arcana', requiredTags: ['magia', 'fuego'], effects: { mana: 5, damage: 2 } }
+      { id: 's1', name: 'Cambio Térmico',     requiredTags: ['fuego','hielo'], effects: { damage: 3, defense: 3 } },
+      { id: 's2', name: 'Convergencia Arcana', requiredTags: ['magia','fuego'], effects: { mana: 5, damage: 2 } }
     ],
     combos: [
       { id: 'c1', name: 'Trinidad Elemental', requiredTags: { fuego: 1, hielo: 1, magia: 1 }, effects: { allResist: 0.1 } }
@@ -1923,7 +2327,7 @@ class TextGameUI {
   };
 }
 
-/** Avatar con interpolación de emociones y dibujo en canvas. */
+/** Avatar con interpolación de emociones y canvas responsive. */
 class AvatarUI {
   #canvas; #ctx; #bus; #logger;
   #state = {
@@ -1935,7 +2339,6 @@ class AvatarUI {
     hablando: false
   };
   #config = { rate: 1, pitch: 1 };
-  // Parámetros de cada emoción para interpolar
   static #EMO = {
     positivo: { mouth: 1, eyeOpen: 0.8, brow: 0.1, color: '#4caf50' },
     negativo: { mouth: -1, eyeOpen: 0.6, brow: -0.2, color: '#f44336' },
@@ -1996,7 +2399,10 @@ class AvatarUI {
     u.lang = 'es-ES';
     u.onstart = () => { this.#state.hablando = true; };
     u.onend = () => { this.#state.hablando = false; this.#state.bocaAbierta = false; };
-    u.onboundary = () => { this.#state.bocaAbierta = true; setTimeout(() => this.#state.bocaAbierta = false, 80); };
+    u.onboundary = () => {
+      this.#state.bocaAbierta = true;
+      setTimeout(() => { this.#state.bocaAbierta = false; }, 80);
+    };
     speechSynthesis.speak(u);
     this.#logger.log('AVATAR_HABLAR', `emoción=${emotion}`);
   }
@@ -2025,7 +2431,6 @@ class AvatarUI {
     const h = this.#canvas.height;
     ctx.clearRect(0, 0, w, h);
 
-    // Interpolar emociones
     if (this.#state.t < 1) this.#state.t = Math.min(1, this.#state.t + 0.03);
     const t = this.#state.t;
     const ea = AvatarUI.#EMO[this.#state.emocionActual] || AvatarUI.#EMO.neutro;
@@ -2034,7 +2439,6 @@ class AvatarUI {
     const eyeOpen = this.#lerp(ea.eyeOpen, eb.eyeOpen, t);
     const brow = this.#lerp(ea.brow, eb.brow, t);
 
-    // Fondo
     ctx.fillStyle = '#2a2a3c';
     ctx.beginPath();
     ctx.arc(w / 2, h / 2, w * 0.4, 0, Math.PI * 2);
@@ -2043,7 +2447,6 @@ class AvatarUI {
     ctx.lineWidth = 3;
     ctx.stroke();
 
-    // Ojos
     const eyeY = h / 2 - h * 0.1;
     const eyeR = w * 0.035;
     for (const dx of [-w * 0.11, w * 0.11]) {
@@ -2057,7 +2460,6 @@ class AvatarUI {
       ctx.fill();
     }
 
-    // Cejas
     const browY = eyeY - eyeR * 2.5;
     for (const dx of [-w * 0.11, w * 0.11]) {
       ctx.beginPath();
@@ -2068,7 +2470,6 @@ class AvatarUI {
       ctx.stroke();
     }
 
-    // Boca
     ctx.beginPath();
     const mouthY = h / 2 + h * 0.13;
     const mouthW = w * 0.09;
@@ -2086,7 +2487,6 @@ class AvatarUI {
     ctx.lineWidth = 3;
     ctx.stroke();
 
-    // Etiqueta
     ctx.font = '10px sans-serif';
     ctx.fillStyle = 'rgba(150,220,255,0.7)';
     ctx.fillText(`🤖 ${this.#state.emocionObjetivo}`, 6, 14);
@@ -2097,23 +2497,37 @@ class AvatarUI {
   };
 }
 
-/** Transcriptor de voz con análisis de sentimiento compartido. */
+/** Transcriptor con diagnóstico de entorno y auto-restart. */
 class TranscriptorUI {
-  #bus; #logger; #rec = null; #listening = false;
+  #bus; #logger; #rec = null; #listening = false; #restartOnEnd = false;
   #historial = [];
   #liveEl = document.getElementById('transcripcion-en-vivo');
   #emoEl = document.getElementById('transcriptorEmotion');
   #histEl = document.getElementById('transcriptorHistorial');
   #btn = document.getElementById('transcriptorMicBtn');
   #langSel = document.getElementById('transcriptorLang');
+
   constructor(bus, logger) {
     this.#bus = bus;
     this.#logger = logger;
     this.#historial = PersistenceService.load('transcripciones', []);
     this.#renderHistorial();
     this.#btn.onclick = () => this.toggle();
+
+    const issues = [];
+    if (location.protocol === 'file:') issues.push('Estás en file:// — el micro requiere HTTPS o localhost.');
+    if (!window.isSecureContext) issues.push('Contexto no seguro.');
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) issues.push('Este navegador no soporta reconocimiento de voz (prueba Chrome/Edge).');
+    if (issues.length) {
+      this.#liveEl.textContent = '⚠️ ' + issues[0];
+      this.#btn.disabled = true;
+      this.#btn.title = issues.join(' ');
+    }
   }
+
   toggle() { this.#listening ? this.#stop() : this.#start(); }
+
   #start() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { alert('Reconocimiento de voz no soportado.'); return; }
@@ -2121,6 +2535,7 @@ class TranscriptorUI {
     this.#rec.continuous = true;
     this.#rec.interimResults = true;
     this.#rec.lang = this.#langSel.value || 'es-ES';
+
     this.#rec.onresult = (e) => {
       const last = e.results[e.results.length - 1];
       const text = last[0].transcript;
@@ -2136,17 +2551,40 @@ class TranscriptorUI {
         this.#logger.log('ESCUCHAR', `${emocion}: ${text.substring(0, 40)}`);
       }
     };
-    this.#rec.onerror = () => this.#stop();
-    this.#rec.start();
-    this.#listening = true;
-    this.#btn.textContent = '⏹';
+
+    this.#rec.onerror = (e) => {
+      this.#logger.log('ESCUCHAR_ERROR', e.error || 'desconocido');
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+        this.#liveEl.textContent = '⚠️ Permiso de micrófono denegado.';
+        this.#stop();
+      }
+    };
+
+    this.#rec.onend = () => {
+      if (this.#listening && this.#restartOnEnd) {
+        this.#restartOnEnd = false;
+        try { this.#rec.start(); this.#restartOnEnd = true; } catch {}
+      }
+    };
+
+    try {
+      this.#rec.start();
+      this.#listening = true;
+      this.#restartOnEnd = true;
+      this.#btn.textContent = '⏹';
+    } catch (e) {
+      this.#liveEl.textContent = '⚠️ ' + e.message;
+    }
   }
+
   #stop() {
-    if (this.#rec) { this.#rec.stop(); this.#rec = null; }
     this.#listening = false;
+    this.#restartOnEnd = false;
+    if (this.#rec) { try { this.#rec.stop(); } catch {} this.#rec = null; }
     this.#btn.textContent = '🎙';
     this.#liveEl.textContent = 'Pulsa el micrófono para empezar';
   }
+
   #renderHistorial() {
     this.#histEl.innerHTML = this.#historial.map(item =>
       `<div class="item-historial"><span>${item.texto}</span><span class="emocion-tag">${item.emocion}</span></div>`
@@ -2154,7 +2592,7 @@ class TranscriptorUI {
   }
 }
 
-/** UI del Audio Planetario (usa dominio Atmosphere + SoundPropagator). */
+/** UI del Audio Planetario con Adaptador Enactivo. */
 class AudioUI {
   #bus; #logger; #audioEngine; #propagator; #renderer; #recorder; #visualizer; #minimap;
   #emergencyGain = 1;
@@ -2207,7 +2645,6 @@ class AudioUI {
         this.#renderer.setBuffer(decoded);
         document.getElementById('audioFileLabel').textContent = '✅ ' + file.name;
         this.#setStatus('Muestra cargada. Toca y graba.', 'ok');
-        // Iniciar visualizador y grabador si no existen
         if (!this.#visualizer) this.#visualizer = new AnalyserVisualizer(document.getElementById('analyserCanvas'), this.#audioEngine.getAnalyserNode());
         if (!this.#recorder) this.#recorder = new MediaRecorderAdapter(this.#audioEngine.getMediaStream());
         this.#logger.log('AUDIO_CARGAR', file.name);
@@ -2318,12 +2755,22 @@ class AudioUI {
   }
 }
 
-/** Panel de Log. */
+/** Panel de Log con filtro y colores por acción. */
 class LogUI {
   #container = document.getElementById('logContainer');
+  #filterInput = document.getElementById('logFilter');
+  #filter = '';
+  #logger;
+
   constructor(bus, logger) {
+    this.#logger = logger;
     bus.on('log:updated', logs => this.render(logs));
-    this.render(logger.getLogs());
+    if (this.#filterInput) {
+      this.#filterInput.oninput = (e) => {
+        this.#filter = e.target.value.toLowerCase();
+        this.render(logger.getLogs());
+      };
+    }
     document.getElementById('logExportBtn').onclick = () => {
       const blob = new Blob([logger.exportText()], { type: 'text/plain' });
       const a = document.createElement('a');
@@ -2331,11 +2778,28 @@ class LogUI {
       a.download = 'log_acciones.txt';
       a.click();
     };
+    this.render(logger.getLogs());
   }
+
   render(logs) {
-    this.#container.innerHTML = logs.length
-      ? logs.map(e => `[${e.timestamp}] ${e.action} ${e.details}`).join('\n')
-      : '<div class="empty">Sin registros.</div>';
+    const filtered = this.#filter
+      ? logs.filter(l => (l.action + ' ' + l.details).toLowerCase().includes(this.#filter))
+      : logs;
+    if (!filtered.length) {
+      this.#container.innerHTML = '<div class="empty">Sin registros' + (this.#filter ? ' que coincidan.' : '.') + '</div>';
+      return;
+    }
+    this.#container.innerHTML = filtered.map(e =>
+      `<div class="log-line">
+         <span class="ts">${new Date(e.timestamp).toLocaleTimeString()}</span>
+         <span class="action" data-t="${e.action}">${e.action}</span>
+         <span class="details">${this.#esc(e.details)}</span>
+       </div>`
+    ).join('');
+  }
+
+  #esc(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   }
 }
 
@@ -2388,7 +2852,6 @@ class App {
   }
 
   #bindGlobal() {
-    // Eventos del bus
     this.#bus.on('context:action', ({ action, target }) => this.#handleContextAction(action, target));
     this.#bus.on('tree:select', ({ node }) => {
       if (node.kind === 'directory') this.#bus.emit('filelist:show', node.children || []);
@@ -2396,17 +2859,14 @@ class App {
     });
     this.#bus.on('config:updated', c => this.contextMenu.updateConfig(c));
 
-    // Botones topbar
     document.getElementById('btnOpenFolder').onclick = () => this.#openFolder();
     document.getElementById('btnToggleTheme').onclick = () => this.#toggleTheme();
     document.getElementById('btnToggleTree').onclick = () => document.getElementById('treePanel').classList.toggle('open');
 
-    // Tabs
     document.querySelectorAll('.tab').forEach(t => {
       t.onclick = () => this.#switchTab(t.dataset.tab);
     });
 
-    // Chat
     document.getElementById('sendBtn').onclick = () => {
       const input = document.getElementById('chatInput');
       const text = input.value.trim();
@@ -2418,7 +2878,6 @@ class App {
       if (e.key === 'Enter') document.getElementById('sendBtn').click();
     };
 
-    // Tema persistente
     if (PersistenceService.load('darkMode', false)) {
       document.body.classList.add('dark');
       document.getElementById('btnToggleTheme').textContent = '☀️';
@@ -2428,9 +2887,10 @@ class App {
   #switchTab(tab) {
     document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.dataset.panel === tab));
     document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
-    // Redibujar canvases si es necesario
-    if (tab === 'audio') setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
-    if (tab === 'avatar') setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+    // Redibujar canvases al cambiar de pestaña
+    if (tab === 'audio' || tab === 'avatar') {
+      setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+    }
   }
 
   #toggleTheme() {
@@ -2463,7 +2923,6 @@ class App {
       const file = await handle.getFile();
       const content = await file.text();
       this.#bus.emit('file:open', { handle, name, content });
-      // Cambiar a pestaña Lab si es código
       if (/\.(js|ts|html|css|json|py|md|txt)$/i.test(name)) {
         this.#switchTab('laboratorio');
       }
@@ -2482,17 +2941,32 @@ class App {
       switch (id) {
         case 'move': {
           const d = prompt('Carpeta destino:');
-          if (d) { await this.#fs.move(fsHandle, d); this.#logger.log('MOVER', `${node.name} → ${d}`); this.#notif.show(`Movido a ${d}`, 'ok'); this.#refresh(); }
+          if (d) {
+            await this.#fs.move(fsHandle, d);
+            this.#logger.log('MOVER', `${node.name} → ${d}`);
+            this.#notif.show(`Movido a ${d}`, 'ok');
+            this.#refresh();
+          }
           break;
         }
         case 'copy': {
           const d = prompt('Carpeta destino:');
-          if (d) { await this.#fs.copy(fsHandle, d); this.#logger.log('COPIAR', `${node.name} → ${d}`); this.#notif.show(`Copiado a ${d}`, 'ok'); this.#refresh(); }
+          if (d) {
+            await this.#fs.copy(fsHandle, d);
+            this.#logger.log('COPIAR', `${node.name} → ${d}`);
+            this.#notif.show(`Copiado a ${d}`, 'ok');
+            this.#refresh();
+          }
           break;
         }
         case 'rename': {
           const n = prompt('Nuevo nombre:');
-          if (n) { await this.#fs.rename(fsHandle, n); this.#logger.log('RENOMBRAR', `${node.name} → ${n}`); this.#notif.show('Renombrado', 'ok'); this.#refresh(); }
+          if (n) {
+            await this.#fs.rename(fsHandle, n);
+            this.#logger.log('RENOMBRAR', `${node.name} → ${n}`);
+            this.#notif.show('Renombrado', 'ok');
+            this.#refresh();
+          }
           break;
         }
         case 'delete': {
@@ -2532,11 +3006,26 @@ class App {
     for (const f of files) {
       try {
         switch (action) {
-          case 'move': await this.#fs.move(f.handle, params.dest); this.#logger.log('MOVER', `${f.name} → ${params.dest}`); break;
-          case 'copy': await this.#fs.copy(f.handle, params.dest); this.#logger.log('COPIAR', `${f.name} → ${params.dest}`); break;
-          case 'rename': await this.#fs.rename(f.handle, f.name.replace(params.from, params.to)); this.#logger.log('RENOMBRAR', f.name); break;
-          case 'changeExt': await this.#fs.changeExtension(f.handle, params.toExt); this.#logger.log('CAMBIAR_EXT', `${f.name} → .${params.toExt}`); break;
-          case 'delete': await this.#fs.delete(f.handle); this.#logger.log('ELIMINAR', f.name); break;
+          case 'move':
+            await this.#fs.move(f.handle, params.dest);
+            this.#logger.log('MOVER', `${f.name} → ${params.dest}`);
+            break;
+          case 'copy':
+            await this.#fs.copy(f.handle, params.dest);
+            this.#logger.log('COPIAR', `${f.name} → ${params.dest}`);
+            break;
+          case 'rename':
+            await this.#fs.rename(f.handle, f.name.replace(params.from, params.to));
+            this.#logger.log('RENOMBRAR', f.name);
+            break;
+          case 'changeExt':
+            await this.#fs.changeExtension(f.handle, params.toExt);
+            this.#logger.log('CAMBIAR_EXT', `${f.name} → .${params.toExt}`);
+            break;
+          case 'delete':
+            await this.#fs.delete(f.handle);
+            this.#logger.log('ELIMINAR', f.name);
+            break;
         }
         ok++;
       } catch (e) { console.error(`Error con ${f.name}:`, e); }
