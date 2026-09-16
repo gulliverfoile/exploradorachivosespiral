@@ -360,11 +360,6 @@ Para evitar expectativas equivocadas, esto es lo que **no** tienes:
 | ❌ Una app de escritorio nativa | Es un HTML. Se ejecuta en el navegador. No hay binarios, no hay instalación. |
 | ❌ Un producto | Es un experimento modular. Cada pieza funciona, pero no está optimizado para producción. |
 
-### Sobre la analogía con Huawei/Nvidia
-
-La arquitectura se parece a la de un "AI-native OS" porque ambos usan el mismo patrón (hexagonal + bus de eventos + adaptadores). Pero Huawei mete debajo modelos reales (Pangu) y hardware propio (Ascend, Kirin). Este proyecto mete reglas escritas y un canvas. La **forma** es la misma; la **carne** es distinta.
-
----
 
 ## ⚠️ Limitaciones por navegador
 
