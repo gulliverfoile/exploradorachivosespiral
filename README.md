@@ -1,4 +1,4 @@
-# 🌀 Asistente Total
+# 🌀 explorador
 
 Un asistente modular de escritorio en **un solo archivo HTML**. Siete módulos independientes, un bus de eventos, arquitectura hexagonal. Sin backend, sin dependencias, sin build.
 
